@@ -143,11 +143,21 @@ jobs:
       - env:
           VERSION: ${{ needs.build.outputs.version }}
         run: |
-          for attempt in 1 2 3 4 5 6; do
-            if pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ \
-                "immune-ai==$VERSION"; then break; fi
+          # No pip cache: TestPyPI's index pages may be cached for 10 minutes, so a copy saved by a try made before
+          # the upload was indexed would hide the new version from every retry.
+          installed=false
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            if pip install --no-cache-dir --index-url https://test.pypi.org/simple/ \
+                --extra-index-url https://pypi.org/simple/ "immune-ai==$VERSION"; then
+              installed=true
+              break
+            fi
             echo "waiting for TestPyPI to serve $VERSION ($attempt)"; sleep 30
           done
+          if [ "$installed" != true ]; then
+            echo "::error::TestPyPI did not serve immune-ai $VERSION within 5 minutes"
+            exit 1
+          fi
           test "$(python -c 'import immune; print(immune.__version__)')" = "$VERSION"
           python -c "import immune, tempfile; immune.init(state_dir=tempfile.mkdtemp())"
           immune version
