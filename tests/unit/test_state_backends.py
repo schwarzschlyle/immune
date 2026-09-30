@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 import threading
 import time
 from collections.abc import Callable, Iterator
@@ -25,6 +26,15 @@ def backend(request: pytest.FixtureRequest, tmp_path: Path) -> Iterator[StateBac
     opened = FACTORIES[request.param](tmp_path)
     yield opened
     opened.close()
+
+
+@pytest.fixture
+def frequent_thread_switches() -> Iterator[None]:
+    # Python normally switches threads every 5 ms, which hides races; switching as often as possible exposes them.
+    interval = sys.getswitchinterval()
+    sys.setswitchinterval(1e-6)
+    yield
+    sys.setswitchinterval(interval)
 
 
 class TestContract:
@@ -95,18 +105,24 @@ class TestContract:
         backend.unlock("profile:site-1")
         assert backend.try_lock("profile:site-1", ttl_s=5)
 
+    @pytest.mark.usefixtures("frequent_thread_switches")
     def test_concurrent_updates_are_not_lost(self, backend: StateBackend) -> None:
         backend.put("count", b"0")
+        errors: list[Exception] = []
 
         def add() -> None:
-            for _ in range(25):
-                backend.update("count", lambda current: str(int(current or b"0") + 1).encode())
+            try:
+                for _ in range(25):
+                    backend.update("count", lambda current: str(int(current or b"0") + 1).encode())
+            except Exception as error:  # a worker's failure must fail the test, not vanish with its thread
+                errors.append(error)
 
         workers = [threading.Thread(target=add) for _ in range(4)]
         for worker in workers:
             worker.start()
         for worker in workers:
             worker.join()
+        assert errors == []
         assert backend.get("count") == b"100"
 
 
