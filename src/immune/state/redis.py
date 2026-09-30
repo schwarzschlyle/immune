@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import importlib
+import random
+import time
 from collections.abc import Iterable, Mapping, Sequence
 from typing import Any
 
@@ -8,7 +10,15 @@ from immune.errors import ConfigError
 from immune.state.backend import Change, Keep, StateBackend
 
 _UPDATE_ATTEMPTS = 20
+# After a WATCH conflict, wait a random, growing moment before retrying, so writers contending for one key stop
+# colliding in lockstep and none of them runs out of attempts.
+_BACKOFF_BASE_S = 0.001
+_BACKOFF_CAP_S = 0.05
 _CHUNK = 1_000
+
+
+def _back_off(attempt: int) -> None:
+    time.sleep(random.uniform(0, min(_BACKOFF_CAP_S, _BACKOFF_BASE_S * 2**attempt)))
 
 
 class RedisBackend(StateBackend):
@@ -40,7 +50,7 @@ class RedisBackend(StateBackend):
 
     def update(self, key: str, change: Change, ttl_s: float | None = None) -> bytes:
         name = self._key(key)
-        for _ in range(_UPDATE_ATTEMPTS):
+        for attempt in range(_UPDATE_ATTEMPTS):
             with self._client.pipeline() as pipeline:
                 try:
                     pipeline.watch(name)
@@ -51,7 +61,7 @@ class RedisBackend(StateBackend):
                     pipeline.execute()
                     return value
                 except self._watch_error:
-                    continue
+                    _back_off(attempt)
         raise ConfigError(f"could not update {key} in redis after {_UPDATE_ATTEMPTS} attempts")
 
     def delete(self, key: str) -> None:
@@ -118,7 +128,7 @@ class RedisBackend(StateBackend):
 
     def filter_records(self, key: str, keep: Keep) -> int:
         name = self._key(key)
-        for _ in range(_UPDATE_ATTEMPTS):
+        for attempt in range(_UPDATE_ATTEMPTS):
             with self._client.pipeline() as pipeline:
                 try:
                     pipeline.watch(name)
@@ -134,7 +144,7 @@ class RedisBackend(StateBackend):
                     pipeline.execute()
                     return len(stored) - len(kept)
                 except self._watch_error:
-                    continue
+                    _back_off(attempt)
         raise ConfigError(f"could not filter {key} in redis after {_UPDATE_ATTEMPTS} attempts")
 
     def try_lock(self, key: str, ttl_s: float) -> bool:

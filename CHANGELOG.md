@@ -11,6 +11,11 @@ each one is called out under **Changed** or **Removed**.
 
 - The user guide is published at https://immune-user-guide.vercel.app/, and the package's Documentation link points there.
 
+### Fixed
+
+- The Redis state backend no longer fails an update with "could not update ... after 20 attempts" when several
+  workers write the same key at once; it now waits a short, random, growing moment between retries.
+
 ## [0.1.0] - 2026-09-30
 
 First public release. Immune is pre-release software: the API may change between minor versions, and the detector
