@@ -21,4 +21,6 @@ and graders) and underneath the SDKs and frameworks you already use.
 - **Vaccines.** Add protections specific to your app in a small YAML file.
 - **Visible.** Every call gets a verdict, streamed to your logs, OpenTelemetry and LangSmith.
 
-Start with the [quickstart](quickstart.md), then the [developer guide](guides/developer-guide.md).
+Start with the [quickstart](quickstart.md), then the [developer guide](guides/developer-guide.md). The
+[user guide](https://immune-user-guide.vercel.app/) teaches Immune topic by topic, with real outputs: integrating with OpenAI,
+LangChain and LangGraph, reading verdicts, vaccines, testing, production and a cookbook.

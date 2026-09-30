@@ -3,3 +3,6 @@ contact_links:
   - name: Security vulnerability in Immune
     url: https://github.com/schwarzschlyle/immune/security/advisories/new
     about: Report vulnerabilities privately.
+  - name: Question or how-to
+    url: https://immune-user-guide.vercel.app/
+    about: The user guide covers setup, OpenAI, LangChain and LangGraph integration, troubleshooting and a cookbook.

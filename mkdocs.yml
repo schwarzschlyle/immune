@@ -9,6 +9,7 @@ theme:
 nav:
   - Home: index.md
   - Quickstart: quickstart.md
+  - User guide: https://immune-user-guide.vercel.app/
   - Project setup: guides/setup.md
   - Concepts:
       - The biological model: concepts/biology.md

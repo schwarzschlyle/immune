@@ -6,4 +6,5 @@ authors:
   - name: "The Immune authors"
 license: Apache-2.0
 repository-code: "https://github.com/schwarzschlyle/immune"
+url: "https://immune-user-guide.vercel.app/"
 keywords: [llm, security, prompt-injection, guardrails, agents]
