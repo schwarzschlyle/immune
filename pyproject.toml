@@ -67,7 +67,7 @@ dev = [
 
 [project.urls]
 Homepage = "https://github.com/schwarzschlyle/immune"
-Documentation = "https://github.com/schwarzschlyle/immune/tree/main/notebooks/user_guide"
+Documentation = "https://immune-user-guide.vercel.app/"
 Issues = "https://github.com/schwarzschlyle/immune/issues"
 Security = "https://github.com/schwarzschlyle/immune/security/policy"
 Changelog = "https://github.com/schwarzschlyle/immune/blob/main/CHANGELOG.md"
