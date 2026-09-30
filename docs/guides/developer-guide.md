@@ -6,7 +6,8 @@ it without breaking anything, and how to customize it: modes, sites, configurati
 
 It describes the `0.1.0` pre-release. [Current limitations](#16-current-limitations) lists what is not finished yet. For
 where each file goes in your repository (`immune.yaml`, `vaccines/`, `scenarios/`, tests and CI), with complete
-minimal examples, start with [project setup](setup.md).
+minimal examples, start with [project setup](setup.md). For a guided, example-first tour with the outputs of a
+real run, see the [user guide](https://immune-user-guide.vercel.app/).
 
 **Contents**
 

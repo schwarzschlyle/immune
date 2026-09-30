@@ -24,7 +24,7 @@
 <p align="center">
   <a href="#installation">Installation</a> &nbsp;&middot;&nbsp;
   <a href="#quickstart">Quickstart</a> &nbsp;&middot;&nbsp;
-  <a href="https://github.com/schwarzschlyle/immune/blob/main/notebooks/user_guide/README.md">User guide</a> &nbsp;&middot;&nbsp;
+  <a href="https://immune-user-guide.vercel.app/">User guide</a> &nbsp;&middot;&nbsp;
   <a href="https://github.com/schwarzschlyle/immune/blob/main/docs/reference/threats.md">Threat catalog</a> &nbsp;&middot;&nbsp;
   <a href="https://github.com/schwarzschlyle/immune/blob/main/CHANGELOG.md">Changelog</a>
 </p>
@@ -111,8 +111,9 @@ print(verdict.action, verdict.explanation)  # rewrite  rewrite: output.secret_le
 A reflex found the key-shaped string, Jev confirmed that the conversation treats it as a real credential, and floor
 rule F3 redacted it. Everything else in the reply reached your code unchanged.
 
-The [user guide](https://github.com/schwarzschlyle/immune/blob/main/notebooks/user_guide/README.md) starts with
-*10 minutes to Immune* and covers every topic with runnable notebooks and saved outputs.
+The [user guide](https://immune-user-guide.vercel.app/) starts with
+[10 minutes to Immune](https://immune-user-guide.vercel.app/#/01_ten_minutes_to_immune) and covers every topic with
+runnable examples and the outputs of a real run.
 
 ## Integrations
 
@@ -170,7 +171,7 @@ flowchart LR
 Code nominates and Jev decides: reflexes are exact about *what* they find, and Jev judges what it *means*. A passage
 copied from your system prompt is redacted when it is private guidance and passes when it is the menu the customer
 asked for. Input screening runs in parallel with your model call; output screening adds one Jev round trip after the
-model finishes. The [concepts guide](https://github.com/schwarzschlyle/immune/blob/main/notebooks/user_guide/02_concepts.ipynb)
+model finishes. The [concepts guide](https://immune-user-guide.vercel.app/#/02_concepts)
 explains the model in full, including the biology behind the name.
 
 ## Threat coverage
@@ -311,7 +312,7 @@ Immune reduces risk in layers; it does not claim that prompt injection is solved
 
 | Guide | Contents |
 | --- | --- |
-| [User guide](https://github.com/schwarzschlyle/immune/blob/main/notebooks/user_guide/README.md) | 18 notebooks: tutorial, concepts, OpenAI, LangChain and LangGraph integration, production, API reference and cookbook |
+| [User guide](https://immune-user-guide.vercel.app/) | 18 guides: tutorial, concepts, OpenAI, LangChain and LangGraph integration, production, API reference and cookbook. Also available as [Jupyter notebooks](https://github.com/schwarzschlyle/immune/tree/main/notebooks/user_guide) you can run |
 | [Developer guide](https://github.com/schwarzschlyle/immune/blob/main/docs/guides/developer-guide.md) | Configuration, sites, vaccines, testing and CI, operations |
 | [Project setup](https://github.com/schwarzschlyle/immune/blob/main/docs/guides/setup.md) | Where `immune.yaml`, vaccines, scenarios and tests live, with a starter project |
 | [Examples](https://github.com/schwarzschlyle/immune/tree/main/examples) | A starter project, a showcase application with a web inspector, notebooks and a feature tour |

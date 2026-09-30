@@ -7,6 +7,10 @@ each one is called out under **Changed** or **Removed**.
 
 ## [Unreleased]
 
+### Changed
+
+- The user guide is published at https://immune-user-guide.vercel.app/, and the package's Documentation link points there.
+
 ## [0.1.0] - 2026-09-30
 
 First public release. Immune is pre-release software: the API may change between minor versions, and the detector
