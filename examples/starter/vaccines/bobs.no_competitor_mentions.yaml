@@ -1,0 +1,11 @@
+id: bobs.no_competitor_mentions
+version: 1.0.0
+title: The reply names a competitor
+stage: output
+detect:
+  keywords: ["Burger Palace", "McRival"]
+respond:
+  message: "I can only talk about Bob's Burgers products."
+tests:
+  positives: ["Honestly, Burger Palace has a better deal."]
+  negatives: ["The Classic is $9 and comes with fries."]

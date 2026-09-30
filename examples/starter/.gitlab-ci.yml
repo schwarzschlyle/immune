@@ -1,0 +1,12 @@
+immune:
+  image: python:3.13
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  script:
+    - pip install -r requirements.txt
+    - immune config validate immune.yaml
+    - immune vaccines test
+    - immune vaccines trial bobs.no_competitor_mentions --corpus tests/fixtures/replies.jsonl --max-rate 0.01
+    - immune replay
+    - pytest

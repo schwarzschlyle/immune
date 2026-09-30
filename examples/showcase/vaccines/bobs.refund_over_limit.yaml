@@ -1,0 +1,12 @@
+id: bobs.refund_over_limit
+version: 1.0.0
+title: Refunds over $100 need the customer's confirmation
+stage: tool
+detect:
+  tool: refund_order
+  argument: {path: amount, greater_than: 100}
+respond:
+  tool: confirm
+tests:
+  positives: [{tool: refund_order, arguments: {order_id: 5521, amount: 250}}]
+  negatives: [{tool: refund_order, arguments: {order_id: 5521, amount: 20}}]

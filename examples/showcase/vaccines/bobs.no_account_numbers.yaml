@@ -1,0 +1,12 @@
+id: bobs.no_account_numbers
+version: 1.0.0
+title: A customer pastes a loyalty account number into chat
+stage: input
+detect:
+  regex: ['\bBB-\d{8}\b']
+respond:
+  text: redirect
+  message: "Please don't share your account number in chat. I can find your account from your order number."
+tests:
+  positives: ["My loyalty account is BB-12345678, can you check my points?"]
+  negatives: ["My order number is 5521."]

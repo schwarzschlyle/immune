@@ -1,0 +1,24 @@
+agent:
+  description: Tool-using assistants and agents.
+  when:
+    has_tools: true
+coding:
+  description: Assistants that write or run code or shell commands.
+  when:
+    archetypes: [code_assistant]
+    capabilities: [executes]
+pipeline:
+  description: Extraction, classification, summarization and other software-facing call sites.
+  when:
+    archetypes: [extract_or_classify, summarize_or_transform, router_or_orchestrator, judge_or_evaluator]
+    sinks: [software]
+business:
+  description: Assistants that speak for a business to its customers.
+  when:
+    archetypes: [customer_service]
+    attributes: [represents_business]
+care:
+  description: User-facing assistants with duty-of-care obligations.
+  when:
+    archetypes: [companion]
+    attributes: [may_talk_to_minors]

@@ -1,0 +1,20 @@
+{
+  "note": "Limits sit about 2x above a GitHub-hosted ubuntu-latest run on 30 Sep 2026 (CI numbers, not a laptop's), so a check fails on a real regression rather than on runner noise. A measurement fails when it misses its limit by more than the tolerance. Rebase after deliberate changes with `python bench/run.py --out results.json` on the same runner.",
+  "tolerance": 0.1,
+  "max": {
+    "payload.1kb.overhead_ms.p50": 8.0,
+    "payload.1kb.protected_ms.p95": 12.0,
+    "payload.32kb.overhead_ms.p50": 100.0,
+    "payload.32kb.protected_ms.p95": 120.0,
+    "payload.256kb.overhead_ms.p50": 700.0,
+    "payload.256kb.protected_ms.p95": 900.0,
+    "streaming.ttft_ms.p50": 20.0,
+    "streaming.ttft_overhead_ms.p50": 6.0,
+    "vaccines.50.text_ms.p50": 2.5
+  },
+  "min": {
+    "concurrency.1.calls_per_s": 90.0,
+    "concurrency.16.calls_per_s": 90.0,
+    "concurrency.64.calls_per_s": 90.0
+  }
+}

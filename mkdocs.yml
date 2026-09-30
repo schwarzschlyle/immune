@@ -1,0 +1,37 @@
+site_name: Immune
+site_description: A general immune system for LLM applications.
+repo_url: https://github.com/schwarzschlyle/immune
+theme:
+  name: material
+  logo: assets/immune-logo.png
+  favicon: assets/favicon.png
+  features: [navigation.sections, content.code.copy]
+nav:
+  - Home: index.md
+  - Quickstart: quickstart.md
+  - Project setup: guides/setup.md
+  - Concepts:
+      - The biological model: concepts/biology.md
+      - Anatomy of an LLM call: concepts/anatomy.md
+      - Invariants and the kill chain: concepts/kill-chain.md
+      - The reflex arc: concepts/reflex-arc.md
+  - Guides:
+      - Developer guide: guides/developer-guide.md
+      - Providers and frameworks: guides/providers.md
+      - Vaccines: guides/vaccines.md
+      - Configuration: guides/configuration.md
+      - Testing your app: guides/testing-your-app.md
+  - Reference:
+      - Threat catalog: reference/threats.md
+      - CLI: reference/cli.md
+  - Security:
+      - Threat model: security/threat-model.md
+      - Data flows: security/data-flows.md
+  - Decisions:
+      - ADR 0001 Wire-level interception: adr/0001-wire-level-interception.md
+      - ADR 0002 Channels and invariants: adr/0002-channels-and-invariants.md
+      - ADR 0003 Calibrated heads: adr/0003-calibrated-heads.md
+      - ADR 0004 Fail open: adr/0004-fail-open.md
+      - ADR 0005 Destination provenance: adr/0005-destination-provenance.md
+      - ADR 0006 Code nominates, Jev decides: adr/0006-code-nominates-jev-decides.md
+markdown_extensions: [admonition, tables, pymdownx.superfences]

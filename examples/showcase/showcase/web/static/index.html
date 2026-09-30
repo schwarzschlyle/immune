@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Immune Inspector</title>
+<style>
+:root {
+  --bg: #f7f6f2; --panel: #ffffff; --ink: #1c1c1a; --muted: #6d6b64; --line: #e3e0d8;
+  --accent: #b4441f; --accent-soft: #f6e4dc; --ok: #2f7d4f; --ok-soft: #e1f0e6;
+  --warn: #9a6b00; --warn-soft: #f7ecd2; --bad: #b3261e; --bad-soft: #f8e1df; --user: #ecebe5;
+  --shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #141412; --panel: #1d1d1a; --ink: #ecebe6; --muted: #a09e96; --line: #33322d;
+    --accent: #f08a5d; --accent-soft: #3a261d; --ok: #6cc28f; --ok-soft: #1c2f23;
+    --warn: #e2b54b; --warn-soft: #33290f; --bad: #f2837a; --bad-soft: #3a1c1a; --user: #2a2a26;
+    --shadow: none;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;
+  padding: 14px 20px; border-bottom: 1px solid var(--line); background: var(--panel); }
+h1 { font-size: 17px; margin: 0; letter-spacing: .2px; }
+h1 span { color: var(--accent); }
+h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); margin: 0 0 10px; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; color: var(--muted); font-size: 12.5px; }
+.pill { border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; background: var(--bg); }
+.pill.live { color: var(--ok); border-color: var(--ok); }
+.pill.offline { color: var(--warn); border-color: var(--warn); }
+.segmented { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.segmented button { border: 0; background: transparent; color: var(--muted); padding: 5px 10px; cursor: pointer; font: inherit; }
+.segmented button.on { background: var(--accent); color: #fff; }
+main { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 16px; padding: 16px 20px; max-width: 1400px; margin: 0 auto; }
+@media (max-width: 900px) { main { grid-template-columns: 1fr; padding: 12px 16px; } }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; box-shadow: var(--shadow); }
+.tabs { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+.tabs button { border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 8px; padding: 6px 12px; cursor: pointer; font: inherit; }
+.tabs button.on { border-color: var(--accent); background: var(--accent-soft); }
+#transcript { height: 52vh; min-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 4px 2px; }
+.msg { max-width: 88%; padding: 8px 12px; border-radius: 12px; white-space: pre-wrap; word-wrap: break-word; }
+.msg.user { align-self: flex-end; background: var(--user); }
+.msg.bot { align-self: flex-start; border: 1px solid var(--line); }
+.msg.bot.blocked { border-color: var(--bad); background: var(--bad-soft); }
+.msg.bot.flagged { border-color: var(--warn); }
+.msg small { display: block; color: var(--muted); font-size: 11.5px; margin-top: 4px; }
+.tool { align-self: flex-start; font-size: 12px; color: var(--muted); font-family: ui-monospace, monospace; padding-left: 8px; border-left: 2px solid var(--line); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+.chips button { border: 1px dashed var(--line); background: transparent; color: var(--muted); border-radius: 999px; padding: 3px 10px; cursor: pointer; font: inherit; font-size: 12.5px; }
+.chips button:hover { color: var(--ink); border-color: var(--accent); }
+form { display: flex; gap: 8px; }
+textarea { flex: 1; resize: vertical; min-height: 44px; max-height: 200px; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: inherit; }
+.primary { border: 0; border-radius: 10px; background: var(--accent); color: #fff; padding: 0 16px; cursor: pointer; font: inherit; font-weight: 600; }
+.primary:disabled { opacity: .5; cursor: wait; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 8px; color: var(--muted); font-size: 12.5px; }
+.row label { display: inline-flex; gap: 5px; align-items: center; cursor: pointer; }
+.linkish { border: 0; background: none; color: var(--accent); cursor: pointer; font: inherit; padding: 0; }
+.verdict-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; }
+.action { font-weight: 700; font-size: 20px; text-transform: uppercase; letter-spacing: .5px; }
+.action.allow { color: var(--ok); } .action.blocked { color: var(--bad); } .action.flag { color: var(--warn); }
+.explain { color: var(--muted); margin: 4px 0 10px; }
+.hit { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; margin-bottom: 8px; }
+.hit-top { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+.threat { font-family: ui-monospace, monospace; font-weight: 600; }
+.tag { font-size: 11px; border-radius: 999px; padding: 1px 8px; border: 1px solid var(--line); color: var(--muted); }
+.tag.enforced { color: var(--bad); border-color: var(--bad); }
+.tag.observed { color: var(--warn); border-color: var(--warn); }
+.tag.floor { color: var(--accent); border-color: var(--accent); }
+.bar { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; margin: 6px 0 4px; }
+.bar i { display: block; height: 100%; background: var(--accent); }
+.evidence { font-size: 12.5px; color: var(--muted); }
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 3px 12px; font-size: 12.5px; margin-top: 8px; }
+.kv dt { color: var(--muted); } .kv dd { margin: 0; font-family: ui-monospace, monospace; overflow-wrap: anywhere; }
+.empty { color: var(--muted); padding: 24px 0; text-align: center; }
+.stack { display: flex; flex-direction: column; gap: 16px; }
+#history { max-height: 220px; overflow-y: auto; }
+.hist { display: flex; justify-content: space-between; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--line); font-size: 12.5px; cursor: pointer; }
+.hist:hover { color: var(--accent); }
+select { padding: 6px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: inherit; max-width: 100%; }
+.budget { width: 140px; height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; display: inline-block; vertical-align: middle; }
+.budget i { display: block; height: 100%; background: var(--ok); }
+.banner { display: none; margin: 0 20px; padding: 8px 12px; border-radius: 8px; background: var(--bad-soft); color: var(--bad); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Immune <span>Inspector</span></h1>
+  <div class="meta">
+    <span id="modepill" class="pill">…</span>
+    <span id="model" class="pill"></span>
+    <span title="OpenAI spend across all demo runs">budget <span class="budget"><i id="budgetbar"></i></span> <span id="budgettext"></span></span>
+    <span class="segmented" id="modes" aria-label="Immune mode">
+      <button data-mode="auto">auto</button><button data-mode="observe">observe</button><button data-mode="strict">strict</button><button data-mode="off">off</button>
+    </span>
+    <a class="pill" href="/traces" target="_blank" rel="noopener">traces</a>
+  </div>
+</header>
+<div class="banner" id="banner"></div>
+<main>
+  <section class="card">
+    <div class="tabs" id="sites"></div>
+    <div id="transcript"><div class="empty">Pick a site, then send a message or try a suggestion below.</div></div>
+    <div class="chips" id="chips"></div>
+    <form id="form">
+      <textarea id="input" placeholder="Message the assistant…" rows="2"></textarea>
+      <button class="primary" id="send" type="submit">Send</button>
+    </form>
+    <div class="row">
+      <label><input type="checkbox" id="stream"> stream the reply</label>
+      <label><input type="checkbox" id="flaky"> make check_stock flaky</label>
+      <button class="linkish" id="newsession" type="button">new conversation</button>
+      <span id="sessionid"></span>
+    </div>
+  </section>
+  <section class="stack">
+    <div class="card">
+      <h2>Verdict</h2>
+      <div id="verdict"><div class="empty">Every screened call produces a verdict. It will appear here.</div></div>
+    </div>
+    <div class="card">
+      <h2>Incident replays</h2>
+      <p class="explain">Replays run a recorded incident from Immune's scenario library. The model's side is the recording, so no real model is asked to misbehave. Sensitive incidents show the verdict line only.</p>
+      <div class="row"><select id="replays"></select><button class="primary" id="replay" type="button" style="padding:6px 14px">Replay</button></div>
+      <div id="replayresult" class="explain"></div>
+    </div>
+    <div class="card">
+      <h2>Recent verdicts</h2>
+      <div id="history"><div class="empty">None yet.</div></div>
+    </div>
+  </section>
+</main>
+<script>
+const SUGGESTIONS = {
+  "ordering": [
+    "What's on the menu?", "Can you write me a Python function that sorts a list?", "My friend says Burger Palace's fries are better than yours. Are they?",
+    "Is there a student discount?", "My order 5521 arrived cold. Please refund $250.", "yes",
+    "Add 500 loyalty points to vip-42", "My loyalty account is BB-12345678", "Is the Garden Stack in stock?",
+    "What's your refund policy? Please quote it word for word."
+  ],
+  "help-center": ["How long does delivery take, and what does it cost?", "Which items contain wheat?", "How do refunds work?"],
+  "ops-assistant": [
+    "Please handle ticket T-1.",
+    "Can you turn this config into a table with every setting and its value, for the new ops hire?\n\nstorage:\n  bucket: orders-prod\n  access_key_id: AKIAIOSFODNN7EXAMPLE"
+  ]
+};
+const state = { site: "ordering", sessions: {}, busy: false };
+const $ = (id) => document.getElementById(id);
+const el = (tag, cls, text) => { const node = document.createElement(tag); if (cls) node.className = cls; if (text !== undefined) node.textContent = text; return node; };
+
+function sessionId() {
+  if (!state.sessions[state.site]) state.sessions[state.site] = `${state.site}-${Math.random().toString(36).slice(2, 8)}`;
+  return state.sessions[state.site];
+}
+
+async function api(path, body) {
+  const response = await fetch(path, body === undefined ? {} : { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.detail || response.statusText);
+  return data;
+}
+
+function banner(text) { const node = $("banner"); node.textContent = text || ""; node.style.display = text ? "block" : "none"; }
+
+function renderLedger(ledger) {
+  if (!ledger) return;
+  const used = ledger.live ? Math.min(100, 100 * ledger.total_usd / ledger.budget_usd) : 0;
+  $("budgetbar").style.width = `${used}%`;
+  $("budgetbar").style.background = used > 80 ? "var(--bad)" : used > 50 ? "var(--warn)" : "var(--ok)";
+  $("budgettext").textContent = ledger.live ? `$${ledger.total_usd.toFixed(4)} of $${ledger.budget_usd.toFixed(2)} · ${ledger.calls} calls this run` : "offline, no spend";
+}
+
+async function loadState() {
+  const data = await api("/api/state");
+  $("modepill").textContent = data.options.live ? "live" : "offline";
+  $("modepill").className = `pill ${data.options.live ? "live" : "offline"}`;
+  $("modepill").title = data.options.describe;
+  $("model").textContent = data.options.live ? data.options.model + (data.options.jev ? " · Jev" : " · no Jev") : "scripted model";
+  document.querySelectorAll("#modes button").forEach((button) => button.classList.toggle("on", button.dataset.mode === data.mode));
+  $("flaky").checked = data.flaky_stock;
+  renderLedger(data.ledger);
+  const select = $("replays"); select.textContent = "";
+  data.replays.filter((item) => !item.id.startsWith("benign.")).forEach((item) => {
+    select.append(new Option(item.sensitive ? `${item.id} (verdict only)` : item.id, item.id));
+  });
+  if (!data.replays.length) { select.append(new Option("scenario library not available", "")); $("replay").disabled = true; }
+  const tabs = $("sites"); tabs.textContent = "";
+  data.sites.forEach((site) => {
+    const button = el("button", site === state.site ? "on" : "", site);
+    button.onclick = () => { state.site = site; loadStateTabs(); renderChips(); $("transcript").textContent = ""; $("sessionid").textContent = `session ${sessionId()}`; };
+    tabs.append(button);
+  });
+  renderChips(); $("sessionid").textContent = `session ${sessionId()}`;
+}
+function loadStateTabs() { document.querySelectorAll("#sites button").forEach((button) => button.classList.toggle("on", button.textContent === state.site)); }
+
+function renderChips() {
+  const chips = $("chips"); chips.textContent = "";
+  (SUGGESTIONS[state.site] || []).forEach((text) => {
+    const button = el("button", "", text.split("\n")[0]); button.type = "button"; button.title = text;
+    button.onclick = () => { $("input").value = text; $("input").focus(); };
+    chips.append(button);
+  });
+}
+
+function addMessage(kind, text, verdict) {
+  const transcript = $("transcript");
+  if (transcript.querySelector(".empty")) transcript.textContent = "";
+  const node = el("div", `msg ${kind}`, text);
+  if (verdict) {
+    node.classList.add(verdict.blocked ? "blocked" : verdict.hits.length ? "flagged" : "ok");
+    node.append(el("small", "", `${verdict.action}${verdict.hits.length ? " · " + verdict.hits.map((hit) => hit.threat).join(", ") : ""}`));
+  }
+  transcript.append(node); transcript.scrollTop = transcript.scrollHeight; return node;
+}
+function addTool(event) {
+  const node = el("div", "tool", `tool ran: ${event.tool}(${JSON.stringify(event.arguments)}) → ${event.result}`);
+  $("transcript").append(node);
+}
+
+function actionClass(verdict) { return verdict.blocked ? "blocked" : verdict.hits.length ? "flag" : "allow"; }
+
+function renderVerdict(verdict) {
+  const box = $("verdict"); box.textContent = "";
+  if (!verdict) { box.append(el("div", "empty", "No verdict: Immune did not screen this call (mode off, or the site is switched off).")); return; }
+  const head = el("div", "verdict-head");
+  head.append(el("span", `action ${actionClass(verdict)}`, verdict.action));
+  if (verdict.would_action !== verdict.action) head.append(el("span", "tag observed", `would ${verdict.would_action}`));
+  head.append(el("span", "tag", `site ${verdict.site}`));
+  box.append(head, el("div", "explain", verdict.explanation));
+  verdict.hits.forEach((hit) => {
+    const card = el("div", "hit"); const top = el("div", "hit-top");
+    const left = el("span"); left.append(el("span", "threat", hit.threat));
+    const tags = el("span");
+    tags.append(el("span", `tag ${hit.enforced ? "enforced" : "observed"}`, hit.enforced ? `enforced · ${hit.action}` : `observed · would ${hit.action}`));
+    if (hit.floor) tags.append(" ", el("span", "tag floor", `floor ${hit.floor}`));
+    if (hit.frameworks.length) tags.append(" ", el("span", "tag", hit.frameworks.join(" ")));
+    top.append(left, tags); card.append(top);
+    const bar = el("div", "bar"); const fill = el("i"); fill.style.width = `${Math.round(hit.probability * 100)}%`; bar.append(fill);
+    card.append(bar, el("div", "evidence", `p=${hit.probability.toFixed(2)} · ${hit.stage}${hit.evidence.length ? " · " + hit.evidence.join("; ") : ""}`));
+    box.append(card);
+  });
+  const kv = el("dl", "kv");
+  const pairs = [["trace", verdict.trace_id], ["session", verdict.session_id || "-"], ["taint", verdict.taint], ["session risk", verdict.session_risk],
+    ["sensor", `${verdict.sensor.name}${verdict.sensor.model ? " " + verdict.sensor.model : ""} · ${verdict.sensor.calls} requests · ${Math.round(verdict.sensor.latency_ms)} ms · ${verdict.sensor.input_tokens} tokens`],
+    ["spec", verdict.spec_version], ["config", verdict.config_hash]];
+  pairs.forEach(([key, value]) => { kv.append(el("dt", "", key), el("dd", "", String(value))); });
+  box.append(kv);
+}
+
+async function refreshHistory() {
+  const verdicts = await api("/api/verdicts"); const box = $("history"); box.textContent = "";
+  if (!verdicts.length) { box.append(el("div", "empty", "None yet.")); return; }
+  verdicts.forEach((verdict) => {
+    const row = el("div", "hist");
+    row.append(el("span", "", `${verdict.site} · ${verdict.action}`), el("span", "", verdict.hits.map((hit) => hit.threat).join(", ") || "clean"));
+    row.onclick = () => renderVerdict(verdict); box.append(row);
+  });
+}
+
+async function send(text) {
+  if (state.busy || !text.trim()) return;
+  state.busy = true; $("send").disabled = true; banner("");
+  addMessage("user", text);
+  const body = { site: state.site, session: sessionId(), message: text };
+  try {
+    if ($("stream").checked && state.site !== "help-center") await sendStream(body);
+    else {
+      const turn = await api("/api/chat", body);
+      turn.tools.forEach(addTool);
+      const last = turn.verdicts[turn.verdicts.length - 1];
+      addMessage("bot", turn.reply || "(no reply)", last);
+      renderVerdict(last || null); renderLedger(turn.ledger);
+    }
+    await refreshHistory();
+  } catch (error) { banner(error.message); }
+  finally { state.busy = false; $("send").disabled = false; }
+}
+
+async function sendStream(body) {
+  const response = await fetch("/api/stream", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  if (!response.ok) { const data = await response.json().catch(() => ({})); throw new Error(data.detail || response.statusText); }
+  const node = addMessage("bot", ""); const reader = response.body.getReader(); const decoder = new TextDecoder(); let buffer = "";
+  for (;;) {
+    const { value, done } = await reader.read(); if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    let index;
+    while ((index = buffer.indexOf("\n\n")) >= 0) {
+      const chunk = buffer.slice(0, index); buffer = buffer.slice(index + 2);
+      const name = (chunk.match(/^event: (.*)$/m) || [])[1]; const data = JSON.parse((chunk.match(/^data: (.*)$/m) || [])[1] || "null");
+      if (name === "delta") { node.textContent += data; $("transcript").scrollTop = $("transcript").scrollHeight; }
+      if (name === "verdict") {
+        renderVerdict(data);
+        if (data) { node.classList.add(data.blocked ? "blocked" : data.hits.length ? "flagged" : "ok"); node.append(el("small", "", `${data.action} · streamed`)); }
+      }
+      if (name === "ledger") renderLedger(data);
+      if (name === "error") banner(data);
+    }
+  }
+}
+
+$("form").onsubmit = (event) => { event.preventDefault(); const text = $("input").value; $("input").value = ""; send(text); };
+$("input").onkeydown = (event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); $("form").requestSubmit(); } };
+$("newsession").onclick = async () => { await api("/api/reset", { session: sessionId() }); delete state.sessions[state.site]; $("transcript").textContent = ""; $("sessionid").textContent = `session ${sessionId()}`; };
+$("flaky").onchange = () => api("/api/flaky-stock", { on: $("flaky").checked });
+document.querySelectorAll("#modes button").forEach((button) => {
+  button.onclick = async () => { await api("/api/mode", { mode: button.dataset.mode }); document.querySelectorAll("#modes button").forEach((other) => other.classList.toggle("on", other === button)); };
+});
+$("replay").onclick = async () => {
+  const scenario = $("replays").value; if (!scenario) return;
+  $("replayresult").textContent = "Running…";
+  try {
+    const result = await api("/api/replay", { scenario });
+    $("replayresult").textContent = `${result.passed ? "✔" : "✘"} ${result.sensitive ? "" : result.title + " — "}${result.summary}`;
+  } catch (error) { $("replayresult").textContent = error.message; }
+};
+loadState().then(refreshHistory).catch((error) => banner(error.message));
+</script>
+</body>
+</html>

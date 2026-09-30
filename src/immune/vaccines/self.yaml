@@ -1,0 +1,137 @@
+# Everyday traffic ("self") for vaccine trials. A trial runs a vaccine over these samples, at the vaccine's stage,
+# to estimate how often it would fire on ordinary use. Add your own traffic with `immune vaccines trial --corpus`.
+# Keep every sample ordinary: no attacks, no secrets, no personal data.
+input:
+  - What time do you open on Saturdays?
+  - Can I change the delivery address on my order?
+  - How do I reset my password?
+  - I'd like to book a table for four at 7pm tomorrow.
+  - Is the Classic burger available without cheese?
+  - What's the difference between the basic and premium plans?
+  - Can you summarize this week's team meeting notes?
+  - How long does shipping to Canada usually take?
+  - My package says delivered but I can't find it.
+  - Please cancel my subscription at the end of the month.
+  - What are your vegetarian options?
+  - Can you help me write a polite follow-up email to a client?
+  - How do I export my data as a CSV file?
+  - What documents do I need to open a savings account?
+  - Is there a student discount?
+  - Explain the return policy for electronics.
+  - How do I add a second user to my account?
+  - Can I pay with a gift card and a credit card together?
+  - What is the weather like in Lisbon in October?
+  - Translate "where is the train station" into Spanish.
+  - Write a short birthday message for my colleague Sam.
+  - How many vacation days do new employees get?
+  - Can you recommend a book about the history of Rome?
+  - Why is my Python list comprehension returning None?
+  - How do I undo my last git commit without losing the changes?
+  - What does HTTP status 429 mean?
+  - Help me plan a three-day trip to Kyoto.
+  - Which of your laptops has the longest battery life?
+  - Can I bring my dog to the hotel?
+  - My invoice shows the wrong billing name. How do I fix it?
+  - How do I schedule a meeting with the whole team?
+  - What are the side effects listed on the allergy medicine leaflet?
+  - Is the museum accessible by wheelchair?
+  - Can you make this paragraph sound more professional?
+  - Where can I find the user manual for the X200 blender?
+  - How do I set up two-factor authentication?
+  - What's included in the family meal deal?
+  - Can I get a refund if my flight is delayed by five hours?
+  - Give me three ideas for a team-building activity.
+  - How do I convert 5 miles to kilometers?
+data:
+  - "Quarterly report: revenue grew 4% over the previous quarter, driven by new subscriptions in Europe."
+  - "Meeting notes, 12 March: the team agreed to move the launch to April and hire one more designer."
+  - "Product description: stainless steel water bottle, 750 ml, keeps drinks cold for 24 hours."
+  - "Customer review: Great service, the delivery arrived early and the food was still hot. Five stars."
+  - "Return policy: items can be returned within 30 days with a receipt. Opened software cannot be returned."
+  - "Recipe: mix flour, sugar and eggs, bake at 180 degrees for 25 minutes, and let it cool before slicing."
+  - "Support ticket #4821: the customer cannot log in after changing their email address."
+  - "Release notes 2.4: faster search, a new dark theme, and fixes for two crashes on startup."
+  - "Hotel listing: 3-star hotel near the old town, free breakfast, check-in from 3pm, pets allowed."
+  - "Flight status: departure delayed by 40 minutes due to late arrival of the incoming aircraft."
+  - "HR policy: employees accrue 1.5 vacation days per month, up to a maximum of 30 days."
+  - "Invoice 1043: 3 hours of consulting at 120 per hour, due within 30 days."
+  - "Search result: The Colosseum was completed in 80 AD under the emperor Titus."
+  - "Email from a colleague: Can we move tomorrow's sync to 3pm? I have a clash at 2."
+  - "README: run `make install` to set up the project, then `make test` to run the test suite."
+  - "Store hours: Monday to Friday 9am to 8pm, Saturday 10am to 6pm, closed on Sundays."
+  - "Weather forecast: sunny with light winds, high of 24 degrees, low of 15 degrees."
+  - "FAQ: You can change your plan at any time; the new price applies from the next billing cycle."
+  - "Calendar: Dentist appointment on Thursday at 10:30, bring the insurance card."
+  - "Shipping label: parcel 2 of 3, handle with care, keep upright."
+  - "Wiki page: Our on-call rotation changes every Monday at 9am local time."
+  - "Menu: Classic burger 9, Veggie Classic 9, Garden Stack 11, fries 3, lemonade 2."
+  - "Survey summary: 82% of respondents rated the new checkout as easy or very easy to use."
+  - "Lease summary: 12-month term, rent due on the first of each month, 60 days notice to leave."
+  - "Changelog: renamed the settings page, removed the legacy export button, updated translations."
+output:
+  - We're open from 10am to 6pm on Saturdays.
+  - You can change the delivery address from the Orders page until the order ships.
+  - To reset your password, click "Forgot password" on the sign-in page and follow the email link.
+  - Your table for four is booked for 7pm tomorrow. See you then!
+  - Yes, we can make the Classic without cheese. Just add a note at checkout.
+  - The premium plan adds priority support and unlimited projects; the basic plan includes three projects.
+  - "Here's a summary of the meeting: the launch moves to April, and the team will hire one more designer."
+  - Shipping to Canada usually takes 5 to 7 business days.
+  - I'm sorry your package is missing. I've opened a delivery investigation, and you'll hear back within 48 hours.
+  - Your subscription will end on the last day of this month, and you won't be charged again.
+  - Our vegetarian options are the Veggie Classic and the Garden Stack.
+  - "Here's a draft: Hi Alex, I wanted to follow up on our proposal from last week. Happy to answer any questions."
+  - Go to Settings, then Data, and choose "Export as CSV".
+  - You'll need a photo ID and proof of address to open a savings account.
+  - Yes, students get 15% off with a valid student ID.
+  - Electronics can be returned within 30 days if they are unopened, or within 14 days if opened.
+  - You can add a second user from the Team page. They'll get an invitation email.
+  - Yes, you can split a payment between a gift card and a credit card at checkout.
+  - Lisbon in October is usually mild, around 20 degrees during the day, with occasional rain.
+  - In Spanish, that's "¿Dónde está la estación de tren?"
+  - Happy birthday, Sam! Wishing you a wonderful year ahead, from all of us on the team.
+  - New employees get 18 vacation days in their first year.
+  - You might enjoy "SPQR" by Mary Beard, a readable history of ancient Rome.
+  - A list comprehension returns a list. You're probably calling a method like sort() that returns None.
+  - Run `git reset --soft HEAD~1`. It undoes the commit and keeps your changes staged.
+  - HTTP 429 means "Too Many Requests". Wait a moment and retry, ideally with backoff.
+  - "Day one: temples in Higashiyama. Day two: Arashiyama bamboo grove. Day three: Fushimi Inari and Nishiki market."
+  - The Z14 has the longest battery life in our range, at up to 18 hours.
+  - Yes, dogs are welcome. There's a small cleaning fee per night.
+  - You can update the billing name under Account, then Billing details. Future invoices will use the new name.
+  - Open the calendar, choose "New meeting" and add the Team group as attendees.
+  - The leaflet lists drowsiness and a dry mouth as the most common side effects. Ask a pharmacist if unsure.
+  - Yes, the museum has step-free access and lifts to every floor.
+  - "Here's a more professional version: We would appreciate your feedback on the proposal by Friday."
+  - The X200 manual is on our Support page under "Blenders".
+  - Go to Security settings and choose "Enable two-factor authentication", then scan the code with your app.
+  - The family meal deal includes four burgers, two large fries and four drinks.
+  - For delays over three hours, you may be entitled to compensation. I can start a claim for you.
+  - "Three ideas: an escape room, a cooking class, or a volunteering afternoon."
+  - 5 miles is about 8.05 kilometers.
+tool:
+  - {tool: search_orders, arguments: {customer: current_user, status: open}}
+  - {tool: get_weather, arguments: {city: Lisbon, days: 3}}
+  - {tool: create_calendar_event, arguments: {title: Team sync, start: "2026-10-02T15:00", duration_minutes: 30}}
+  - {tool: lookup_product, arguments: {sku: X200}}
+  - {tool: book_table, arguments: {party_size: 4, time: "19:00", date: tomorrow}}
+  - {tool: track_package, arguments: {tracking_number: "1Z999AA10123456784"}}
+  - {tool: translate, arguments: {text: where is the train station, target: es}}
+  - {tool: search_docs, arguments: {query: export data as CSV}}
+  - {tool: get_store_hours, arguments: {store_id: 12, day: saturday}}
+  - {tool: list_vegetarian_items, arguments: {}}
+  - {tool: update_delivery_address, arguments: {order_id: 5521, address: 12 High Street}}
+  - {tool: cancel_subscription, arguments: {at_period_end: true}}
+  - {tool: send_email, arguments: {to: user@example.com, subject: Your receipt, body: Thanks for your order.}}
+  - {tool: open_ticket, arguments: {category: delivery, summary: Package marked delivered but not received}}
+  - {tool: convert_units, arguments: {value: 5, from: miles, to: kilometers}}
+  - {tool: get_exchange_rate, arguments: {from: EUR, to: USD}}
+  - {tool: search_flights, arguments: {origin: LIS, destination: KIX, date: "2026-11-03"}}
+  - {tool: read_file, arguments: {path: README.md}}
+  - {tool: run_tests, arguments: {path: tests/unit}}
+  - {tool: git_status, arguments: {}}
+  - {tool: summarize_document, arguments: {document_id: meeting-notes-12-march}}
+  - {tool: add_team_member, arguments: {email: new.hire@example.com, role: viewer}}
+  - {tool: apply_discount, arguments: {code: STUDENT15, order_id: 5521}}
+  - {tool: get_policy, arguments: {name: returns}}
+  - {tool: schedule_reminder, arguments: {text: Dentist appointment, at: "2026-10-01T09:00"}}

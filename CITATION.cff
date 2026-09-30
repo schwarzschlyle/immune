@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+title: "Immune: a general immune system for LLM applications"
+message: "If you use Immune in research, please cite it as below."
+type: software
+authors:
+  - name: "The Immune authors"
+license: Apache-2.0
+repository-code: "https://github.com/schwarzschlyle/immune"
+keywords: [llm, security, prompt-injection, guardrails, agents]

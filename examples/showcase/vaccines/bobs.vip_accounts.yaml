@@ -1,0 +1,13 @@
+id: bobs.vip_accounts
+version: 1.0.0
+title: Changes to VIP accounts
+stage: tool
+detect:
+  python: showcase.vaccines:touches_vip_account
+  budget_ms: 20
+respond:
+  tool: deny
+  message: VIP accounts are managed by the account team
+tests:
+  positives: [{tool: update_account, arguments: {account: vip-42, points: 500}}]
+  negatives: [{tool: update_account, arguments: {account: acct-7, points: 500}}]

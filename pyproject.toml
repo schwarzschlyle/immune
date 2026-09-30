@@ -1,0 +1,159 @@
+[build-system]
+requires = ["hatchling>=1.25", "hatch-vcs>=0.4"]
+build-backend = "hatchling.build"
+
+[project]
+name = "immune-ai"
+dynamic = ["version"]
+description = "A general immune system for LLM applications: two lines, every call, reflexes at every boundary."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{ name = "Immune contributors" }]
+keywords = ["llm", "security", "guardrails", "prompt-injection", "agents", "owasp", "jev", "ai-safety"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Security",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Typing :: Typed",
+]
+dependencies = [
+  "typesafe-sdk>=0.7.1,<0.8",
+  "pydantic>=2.12",
+  "pyyaml>=6",
+]
+
+[project.optional-dependencies]
+otel = ["opentelemetry-api>=1.25"]
+redis = ["redis>=5"]
+claude-agent = ["claude-agent-sdk>=0.2"]
+langsmith = ["langsmith>=0.4.25"]
+all = ["immune-ai[otel,redis,claude-agent,langsmith]"]
+notebook = ["ipykernel>=6.29", "nbclient>=0.10", "nbformat>=5.10"]
+dev = [
+  "pytest>=8",
+  "pytest-asyncio>=0.24",
+  "hypothesis>=6.100",
+  "coverage[toml]>=7.6",
+  "ruff>=0.6",
+  "mypy>=1.11",
+  "types-PyYAML",
+  "openai[aiohttp]>=2.45,<4",
+  "anthropic>=1.8,<2",
+  "google-genai>=2",
+  "httpx>=0.27",
+  "fakeredis>=2.26",
+  "redis>=5",
+  "boto3>=1.35",
+  "opentelemetry-sdk>=1.25",
+  "langsmith>=0.4.25",
+  "actionlint-py>=1.7",
+  "pip-audit>=2.7",
+  "build>=1.2",
+  "twine>=5",
+  "pre-commit>=3.8",
+  "mkdocs>=1.6,<2",
+  "mkdocs-material>=9.5",
+]
+
+[project.urls]
+Homepage = "https://github.com/schwarzschlyle/immune"
+Documentation = "https://github.com/schwarzschlyle/immune/tree/main/notebooks/user_guide"
+Issues = "https://github.com/schwarzschlyle/immune/issues"
+Security = "https://github.com/schwarzschlyle/immune/security/policy"
+Changelog = "https://github.com/schwarzschlyle/immune/blob/main/CHANGELOG.md"
+
+[project.scripts]
+immune = "immune.cli.main:main"
+
+[project.entry-points.pytest11]
+immune = "immune.testing.pytest_plugin"
+
+# The version comes from git tags: tagging v0.1.0 builds 0.1.0. Untagged commits build PyPI-safe development versions
+# of the next minor release (0.2.0.dev3), and a source tree without git metadata reports 0.0.0. See RELEASING.md.
+[tool.hatch.version]
+source = "vcs"
+fallback-version = "0.0.0"
+
+[tool.hatch.version.raw-options]
+version_scheme = "release-branch-semver"
+local_scheme = "no-local-version"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "src/immune/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/immune"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"scenarios" = "immune/scenarios"
+
+[tool.hatch.build.targets.sdist]
+include = ["/src/immune", "/tests", "/tools", "/scenarios", "/docs", "/examples", "/notebooks", "/README.md", "/RELEASING.md", "/LICENSE", "/NOTICE", "/CHANGELOG.md"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = ["-ra", "--strict-markers", "--strict-config"]
+filterwarnings = ["error::DeprecationWarning:immune.*", "ignore::DeprecationWarning:google.genai.*"]
+markers = ["live: requires TYPESAFE_API_KEY and network access"]
+
+[tool.coverage.run]
+branch = true
+source = ["immune"]
+omit = ["src/immune/_version.py"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+exclude_also = ["if TYPE_CHECKING:", "raise NotImplementedError", "@overload", "\\.\\.\\."]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "UP", "SIM", "C4", "RET", "PIE", "PT", "RUF", "N", "S", "ASYNC", "TCH", "PERF", "PL"]
+ignore = ["PLR0913", "PLR0917", "PLR2004", "PLR0911", "PLR0912", "PLR0914", "PLR6301", "S101", "S311", "RUF001", "RUF002", "RUF003", "PLC0415", "TC001", "TC002", "TC003", "N818", "PERF203"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S", "PLR", "N802", "RUF012"]
+"examples/**" = ["S", "T20"]
+"tools/**" = ["S603", "S607", "T20"]
+"src/immune/state/sqlite.py" = ["S608"]
+"src/immune/testing/bedrock.py" = ["S106"]
+"bench/**" = ["S603", "S607", "T20"]
+# Every user-guide cell is self-contained, so imports repeat from cell to cell by design.
+"notebooks/**" = ["S", "T20", "F811"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["immune"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unreachable = true
+mypy_path = "src"
+packages = ["immune"]
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["httpx.*", "httpx2.*", "opentelemetry.*", "redis.*", "claude_agent_sdk.*", "langsmith.*"]
+ignore_missing_imports = true
+
+[dependency-groups]
+dev = [
+    "jupyter>=1.1.1",
+]

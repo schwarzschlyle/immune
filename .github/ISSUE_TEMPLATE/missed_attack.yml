@@ -1,0 +1,11 @@
+name: Missed attack
+description: An attack that Immune did not catch.
+labels: [missed-attack]
+body:
+  - type: textarea
+    id: attack
+    attributes: {label: Attack, description: A minimal reproduction. Please do not include working harmful content.}
+    validations: {required: true}
+  - type: textarea
+    id: expected
+    attributes: {label: Which link of the chain should have broken it}

@@ -1,0 +1,227 @@
+name: release
+
+# The version comes from git tags (hatch-vcs); RELEASING.md describes the whole flow.
+#
+#   push to dev or staging -> build X.Y.Z.devN (N = run)  -> TestPyPI
+#   tag vX.Y.ZrcN          -> build the release candidate -> TestPyPI, GitHub pre-release
+#   tag vX.Y.Z on main     -> build the release           -> PyPI (after approval), GitHub release, back-merge PRs
+on:
+  push:
+    branches: [dev, staging]
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      channel: ${{ steps.plan.outputs.channel }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - id: plan
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          if [ "$REF_TYPE" = "tag" ]; then
+            python tools/release.py check "$REF_NAME"
+            if [[ "$REF_NAME" =~ rc[0-9]+$ ]]; then
+              channel=candidate
+            else
+              channel=release
+              if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+                echo "::error::release tag $REF_NAME must point to a commit on main"
+                exit 1
+              fi
+            fi
+          else
+            channel="$REF_NAME"
+          fi
+          echo "channel=$channel" >> "$GITHUB_OUTPUT"
+          echo "channel: $channel"
+
+  build:
+    needs: plan
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - run: pip install build twine cyclonedx-bom
+      - name: Version dev and staging builds by run number, so the two branches never publish the same version
+        if: github.ref_type == 'branch'
+        env:
+          RUN_NUMBER: ${{ github.run_number }}
+        run: echo "SETUPTOOLS_SCM_PRETEND_VERSION=$(python tools/release.py dev-version --number "$RUN_NUMBER")" >> "$GITHUB_ENV"
+      - run: python -m build
+      - run: twine check --strict dist/*
+      - run: python tools/check_wheel.py dist
+      - run: python tools/reproducible_build.py
+      - id: version
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          wheel=$(ls dist/*.whl)
+          version=$(basename "$wheel" | cut -d- -f2)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "built $version"
+          if [ "$REF_TYPE" = "tag" ] && [ "v$version" != "$REF_NAME" ]; then
+            echo "::error::built version $version does not match tag $REF_NAME"
+            exit 1
+          fi
+      - run: python -m venv sbom-env && sbom-env/bin/pip install dist/*.whl
+      - run: cyclonedx-py environment sbom-env --output-format JSON --output-file sbom.cdx.json
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dist
+          path: |
+            dist/
+            sbom.cdx.json
+
+  attest:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: dist
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: |
+            dist/*
+            sbom.cdx.json
+
+  testpypi:
+    needs: [plan, build, attest]
+    if: needs.plan.outputs.channel != 'release'
+    runs-on: ubuntu-latest
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/project/immune-ai/${{ needs.build.outputs.version }}/
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: dist
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          packages-dir: dist/
+          attestations: true
+          skip-existing: true
+
+  smoke-test:
+    needs: [build, testpypi]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - env:
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          for attempt in 1 2 3 4 5 6; do
+            if pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ \
+                "immune-ai==$VERSION"; then break; fi
+            echo "waiting for TestPyPI to serve $VERSION ($attempt)"; sleep 30
+          done
+          test "$(python -c 'import immune; print(immune.__version__)')" = "$VERSION"
+          python -c "import immune, tempfile; immune.init(state_dir=tempfile.mkdtemp())"
+          immune version
+          # The scenario library replays through the provider SDKs, which are not dependencies of immune-ai.
+          pip install openai anthropic
+          immune replay
+
+  pypi:
+    needs: [plan, build, attest]
+    if: needs.plan.outputs.channel == 'release'
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/immune-ai/${{ needs.build.outputs.version }}/
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: dist
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        with:
+          packages-dir: dist/
+          attestations: true
+
+  github-release:
+    needs: [plan, build, testpypi, pypi]
+    if: >-
+      always() && (
+        (needs.plan.outputs.channel == 'release' && needs.pypi.result == 'success') ||
+        (needs.plan.outputs.channel == 'candidate' && needs.testpypi.result == 'success')
+      )
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: dist
+          path: artifacts
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          VERSION: ${{ needs.build.outputs.version }}
+          CHANNEL: ${{ needs.plan.outputs.channel }}
+        run: |
+          python tools/release.py notes "$VERSION" > notes.md
+          flags=(--repo "$GITHUB_REPOSITORY" --verify-tag --title "Immune $VERSION" --notes-file notes.md)
+          # Release candidates and every 0.x release are GitHub pre-releases, which GitHub never marks as latest.
+          if [ "$CHANNEL" = "candidate" ] || [[ "$VERSION" == 0.* ]]; then
+            flags+=(--prerelease)
+          else
+            flags+=(--latest)
+          fi
+          gh release create "$TAG" artifacts/dist/* artifacts/sbom.cdx.json "${flags[@]}"
+
+  back-merge:
+    needs: [plan, github-release]
+    if: needs.plan.outputs.channel == 'release'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          for branch in staging dev; do
+            gh pr create --repo "$GITHUB_REPOSITORY" --base "$branch" --head main \
+              --title "chore: sync main into $branch after $TAG" \
+              --body "Brings $branch up to date with the $TAG release on main." \
+              || echo "$branch is already up to date with main"
+          done

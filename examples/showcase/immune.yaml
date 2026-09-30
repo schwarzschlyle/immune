@@ -1,0 +1,46 @@
+# Immune settings for the Bob's Burgers assistant platform. Relative paths are relative to this file.
+mode: auto
+state_dir: runs/state                    # the demo's own state, next to this file
+
+privacy:
+  verdict_log: runs/verdicts.jsonl       # every verdict as JSON, for `python -m showcase report`
+
+vaccines:
+  paths: [vaccines/]
+
+limits:
+  max_identical_tool_calls: 2            # a customer chat never needs the same call three times (default 3)
+
+telemetry:
+  langsmith:
+    project: immune-showcase             # used when LANGSMITH_TRACING and LANGSMITH_API_KEY are set
+
+sites:
+  ordering:                              # customer chat with tools
+    archetype: customer_service
+    user_facing: true
+    organs: [business]
+    enforce: [input.off_task, output.task_deviation, "bobs.*"]
+    allowed_destinations: [bobsburgers.example]
+    tools:
+      refund_order: {writes_state: true, irreversible: true}
+      place_order: {writes_state: true}
+      send_receipt: {egress: true}
+      update_account: {writes_state: true}
+  help-center:                           # answers from the knowledge base
+    archetype: knowledge_qa
+    user_facing: true
+    enforce: [input.off_task]
+    observe: [output.ungrounded]
+  review-triage:                         # structured extraction in a batch job
+    archetype: extract_or_classify
+    user_facing: false
+    echo: {enforce: true, min_agreement: 0.2}
+  ops-assistant:                         # internal agent that emails suppliers
+    archetype: autonomous_agent
+    user_facing: false
+    organs: [agent]
+    allowed_destinations: [supplier.example]
+    tools:
+      send_email: {egress: true}
+      read_ticket: {reads_private: true}

@@ -1,0 +1,18 @@
+# Immune settings for the ordering assistant. Immune reads ./immune.yaml from the directory the app starts in,
+# or the file named by IMMUNE_CONFIG. Relative paths below are relative to this file.
+mode: auto
+
+vaccines:
+  paths: [vaccines/]
+
+sites:
+  ordering:                          # immune.site("ordering") in app.py
+    archetype: customer_service
+    user_facing: true                # crisis resources and confirmations apply to people
+    enforce:
+      - input.off_task               # redirect requests unrelated to ordering
+      - output.task_deviation
+      - bobs.*                       # this app's vaccines
+    allowed_destinations: [bobsburgers.example]
+    tools:
+      refund_order: {writes_state: true, irreversible: true}

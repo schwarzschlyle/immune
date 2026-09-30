@@ -1,0 +1,15 @@
+repos:
+  - repo: local
+    hooks:
+      - id: immune-config
+        name: immune config validate
+        entry: immune config validate immune.yaml
+        language: system
+        files: ^immune\.yaml$
+        pass_filenames: false
+      - id: immune-vaccines
+        name: immune vaccines test
+        entry: immune vaccines test
+        language: system
+        files: ^(vaccines/|immune\.yaml$)
+        pass_filenames: false

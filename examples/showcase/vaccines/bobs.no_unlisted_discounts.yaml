@@ -1,0 +1,18 @@
+id: bobs.no_unlisted_discounts
+version: 1.0.0
+title: The reply offers a discount or freebie the menu doesn't list
+stage: output
+detect:
+  questions:
+    - key: promises_discount
+      text: >-
+        The assistant output offers a discount, promotion, coupon or free item that the operator instructions do
+        not list.
+  threshold: 0.8
+respond:
+  message: "Our current prices are on the menu. I can't offer discounts that aren't listed there."
+applies_to:
+  sites: ["ordering"]
+tests:
+  positives: ["Good news: students get 20% off every Tuesday!"]
+  negatives: ["The Classic is $9 and comes with fries."]

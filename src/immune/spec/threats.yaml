@@ -1,0 +1,466 @@
+- id: inbound.smuggled_characters
+  invariant: U1
+  stage: input
+  detector: candidate
+  threshold: 0.6
+  severity: medium
+  frameworks: [LLM01]
+  actions: {text: neutralize, software: neutralize, data: neutralize}
+  floor: {id: F1}
+
+- id: inbound.hidden_content
+  invariant: U1
+  stage: data
+  detector: candidate
+  threshold: 0.6
+  severity: medium
+  frameworks: [LLM01, ASI01]
+  actions: {data: neutralize}
+  floor: {id: F1}
+
+- id: inbound.template_tokens
+  invariant: U1
+  stage: input
+  detector: candidate
+  threshold: 0.7
+  severity: medium
+  frameworks: [LLM01]
+  actions: {text: redirect, software: refuse, data: neutralize}
+
+- id: inbound.encoded_payload
+  invariant: U1
+  stage: input
+  detector: candidate
+  threshold: 0.7
+  severity: low
+  frameworks: [LLM01]
+  actions: {text: annotate, software: annotate, data: annotate}
+
+- id: inbound.guard_addressed
+  invariant: U1
+  stage: input
+  detector: candidate
+  threshold: 0.7
+  severity: medium
+  frameworks: [LLM01]
+  actions: {text: annotate, software: annotate, data: annotate}
+
+- id: input.override
+  invariant: U1
+  stage: input
+  detector: jev
+  severity: high
+  threshold: 0.7
+  frameworks: [LLM01]
+  actions: {text: redirect, software: refuse}
+
+- id: input.framing_bypass
+  invariant: U1
+  stage: input
+  detector: jev
+  severity: medium
+  threshold: 0.8
+  frameworks: [LLM01]
+  actions: {text: redirect, software: refuse}
+
+- id: input.extraction
+  invariant: U4
+  stage: input
+  detector: jev
+  severity: medium
+  threshold: 0.8
+  frameworks: [LLM07]
+  actions: {text: redirect, software: refuse}
+
+- id: input.obfuscation
+  invariant: U1
+  stage: input
+  detector: jev
+  severity: medium
+  threshold: 0.8
+  frameworks: [LLM01]
+  actions: {text: redirect, software: refuse}
+
+- id: input.judge_manipulation
+  invariant: U1
+  stage: input
+  detector: jev
+  severity: high
+  threshold: 0.7
+  frameworks: [LLM01]
+  actions: {text: redirect, software: refuse}
+
+- id: input.off_task
+  invariant: U2
+  stage: input
+  detector: jev
+  severity: low
+  threshold: 0.85
+  frameworks: [LLM10]
+  actions: {text: redirect, software: refuse}
+
+- id: input.resource_abuse
+  invariant: U9
+  stage: input
+  detector: jev
+  severity: low
+  threshold: 0.85
+  frameworks: [LLM10]
+  actions: {text: redirect, software: refuse}
+
+- id: input.severe_harm
+  invariant: U6
+  stage: input
+  detector: jev
+  severity: critical
+  threshold: 0.7
+  frameworks: [LLM01]
+  actions: {text: redirect, software: refuse}
+  floor: {id: F8, threshold: 0.9}
+
+- id: input.harmful_request
+  invariant: U6
+  stage: input
+  detector: jev
+  severity: high
+  threshold: 0.8
+  frameworks: [LLM01]
+  actions: {text: redirect, software: refuse}
+
+- id: input.crisis
+  invariant: U6
+  stage: input
+  detector: jev
+  severity: critical
+  threshold: 0.5
+  frameworks: []
+  actions: {text: augment, software: annotate}
+  floor: {id: F9, threshold: 0.5, requires: user_facing}
+
+- id: care.minor_signals
+  invariant: U6
+  stage: input
+  detector: jev
+  severity: medium
+  threshold: 0.7
+  organ: care
+  frameworks: []
+  actions: {text: annotate, software: annotate}
+
+- id: data.instructions
+  invariant: U1
+  stage: data
+  detector: jev
+  severity: high
+  threshold: 0.6
+  taints: suspicious
+  frameworks: [LLM01, ASI01, ASI06]
+  actions: {data: neutralize}
+  floor: {id: F7, threshold: 0.97, requires: view_agreement}
+
+- id: data.exfil_request
+  invariant: U4
+  stage: data
+  detector: jev
+  severity: high
+  threshold: 0.7
+  taints: suspicious
+  frameworks: [LLM01, LLM02, ASI01]
+  actions: {data: neutralize}
+
+- id: data.impersonation
+  invariant: U1
+  stage: data
+  detector: jev
+  severity: high
+  threshold: 0.7
+  taints: suspicious
+  frameworks: [LLM01]
+  actions: {data: neutralize}
+
+- id: tool.destination_provenance
+  invariant: U3
+  stage: tool
+  detector: candidate
+  threshold: 0.6
+  severity: critical
+  frameworks: [LLM06, ASI01, ASI02]
+  actions: {tool: hold}
+  floor: {id: F4}
+
+- id: tool.secret_egress
+  invariant: U4
+  stage: tool
+  detector: candidate
+  threshold: 0.6
+  severity: critical
+  frameworks: [LLM02, ASI02]
+  actions: {tool: hold}
+  floor: {id: F5}
+
+- id: tool.loop
+  invariant: U9
+  stage: tool
+  detector: candidate
+  threshold: 0.6
+  severity: medium
+  frameworks: [LLM10, ASI08]
+  actions: {tool: deny}
+  floor: {id: F6}
+
+- id: tool.tainted_irreversible
+  invariant: U3
+  stage: tool
+  detector: candidate
+  threshold: 0.6
+  severity: high
+  frameworks: [LLM06, ASI02]
+  actions: {tool: confirm}
+  floor: {id: F10}
+
+- id: tool.dangerous_command
+  invariant: U5
+  stage: tool
+  detector: candidate
+  threshold: 0.7
+  severity: high
+  organ: coding
+  frameworks: [LLM05, ASI05]
+  actions: {tool: hold}
+
+- id: tool.description_poisoning
+  invariant: U1
+  stage: tool
+  detector: candidate
+  threshold: 0.7
+  severity: high
+  organ: agent
+  frameworks: [ASI04]
+  actions: {tool: annotate}
+
+- id: tool.unrequested
+  invariant: U3
+  stage: tool
+  detector: jev
+  severity: medium
+  threshold: 0.8
+  frameworks: [LLM06, ASI02]
+  actions: {tool: confirm}
+
+- id: tool.content_induced
+  invariant: U1
+  stage: tool
+  detector: jev
+  severity: high
+  threshold: 0.7
+  frameworks: [LLM01, ASI01]
+  actions: {tool: deny}
+
+- id: tool.exceeds_request
+  invariant: U3
+  stage: tool
+  detector: jev
+  severity: medium
+  threshold: 0.8
+  frameworks: [LLM06]
+  actions: {tool: confirm}
+
+- id: output.exfil_link
+  invariant: U4
+  stage: output
+  detector: candidate
+  threshold: 0.6
+  severity: critical
+  frameworks: [LLM05, ASI01]
+  actions: {text: rewrite, software: rewrite}
+  floor: {id: F2}
+
+- id: output.unsafe_markup
+  invariant: U5
+  stage: output
+  detector: candidate
+  threshold: 0.6
+  severity: high
+  frameworks: [LLM05]
+  actions: {text: rewrite}
+  floor: {id: F2, requires: rendered}
+
+- id: output.secret_leak
+  invariant: U4
+  stage: output
+  detector: candidate
+  threshold: 0.6
+  severity: critical
+  frameworks: [LLM02]
+  actions: {text: rewrite, software: rewrite}
+  floor: {id: F3}
+
+- id: output.canary_leak
+  invariant: U4
+  stage: output
+  detector: candidate
+  threshold: 0.6
+  severity: critical
+  frameworks: [LLM07]
+  actions: {text: rewrite, software: rewrite}
+  floor: {id: F3}
+
+- id: output.prompt_copy
+  invariant: U4
+  stage: output
+  detector: candidate
+  threshold: 0.6
+  severity: high
+  frameworks: [LLM07]
+  actions: {text: rewrite, software: rewrite}
+  floor: {id: F3}
+
+- id: output.task_deviation
+  invariant: U2
+  stage: output
+  detector: jev
+  severity: medium
+  threshold: 0.85
+  frameworks: [LLM01]
+  actions: {text: rewrite, software: refuse}
+
+- id: output.follows_data_instructions
+  invariant: U1
+  stage: output
+  detector: jev
+  severity: high
+  threshold: 0.7
+  frameworks: [LLM01, ASI01]
+  actions: {text: rewrite, software: refuse}
+
+- id: output.reveals_instructions
+  invariant: U4
+  stage: output
+  detector: jev
+  severity: medium
+  threshold: 0.8
+  frameworks: [LLM07]
+  actions: {text: rewrite, software: refuse}
+
+- id: output.private_data
+  invariant: U4
+  stage: output
+  detector: jev
+  severity: high
+  threshold: 0.8
+  frameworks: [LLM02]
+  actions: {text: rewrite, software: refuse}
+
+- id: output.severe_harm
+  invariant: U6
+  stage: output
+  detector: jev
+  severity: critical
+  threshold: 0.7
+  frameworks: []
+  actions: {text: rewrite, software: refuse}
+  floor: {id: F8, threshold: 0.9}
+
+- id: output.harmful
+  invariant: U6
+  stage: output
+  detector: jev
+  severity: high
+  threshold: 0.8
+  frameworks: []
+  actions: {text: rewrite, software: refuse}
+
+- id: output.ungrounded
+  invariant: U7
+  stage: output
+  detector: jev
+  severity: medium
+  threshold: 0.7
+  frameworks: [LLM09]
+  actions: {text: rewrite, software: annotate}
+
+- id: output.false_action_claim
+  invariant: U8
+  stage: output
+  detector: jev
+  severity: medium
+  threshold: 0.7
+  frameworks: [LLM09, ASI09]
+  actions: {text: rewrite}
+
+- id: output.claims_human
+  invariant: U8
+  stage: output
+  detector: jev
+  severity: medium
+  threshold: 0.7
+  frameworks: [ASI09]
+  actions: {text: rewrite}
+
+- id: output.solicits_secrets
+  invariant: U4
+  stage: output
+  detector: jev
+  severity: high
+  threshold: 0.7
+  taints: suspicious
+  frameworks: [ASI09]
+  actions: {text: rewrite}
+
+- id: output.manipulation
+  invariant: U6
+  stage: output
+  detector: jev
+  severity: medium
+  threshold: 0.8
+  organ: care
+  frameworks: [ASI09]
+  actions: {text: rewrite}
+
+- id: output.echo_disagreement
+  invariant: U2
+  stage: output
+  detector: deterministic
+  severity: medium
+  organ: pipeline
+  frameworks: [LLM01]
+  actions: {software: refuse, text: annotate}
+
+- id: business.unauthorized_commitment
+  invariant: U2
+  stage: output
+  detector: jev
+  severity: high
+  threshold: 0.7
+  organ: business
+  frameworks: [LLM09, LLM06]
+  actions: {text: rewrite}
+
+- id: business.ungrounded_number
+  invariant: U7
+  stage: output
+  detector: candidate
+  threshold: 0.7
+  severity: medium
+  organ: business
+  frameworks: [LLM09]
+  actions: {text: rewrite}
+
+- id: care.minor_unsafe
+  invariant: U6
+  stage: output
+  detector: jev
+  severity: high
+  threshold: 0.7
+  organ: care
+  frameworks: []
+  actions: {text: rewrite}
+
+- id: session.adversarial
+  invariant: U1
+  stage: input
+  detector: deterministic
+  severity: high
+  threshold: 0.9
+  frameworks: [LLM01]
+  actions: {text: end_session, software: refuse}

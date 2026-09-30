@@ -1,0 +1,15 @@
+name: Bug report
+description: Something in Immune does not work as documented.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes: {label: What happened, description: Include the verdict or error.}
+    validations: {required: true}
+  - type: textarea
+    id: reproduce
+    attributes: {label: How to reproduce, description: A minimal script or scenario file.}
+    validations: {required: true}
+  - type: input
+    id: versions
+    attributes: {label: Versions, description: Output of `immune doctor`.}

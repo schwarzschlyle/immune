@@ -1,0 +1,16 @@
+langchain-openai
+langchain-anthropic
+langgraph
+litellm
+pydantic-ai-slim[openai,anthropic]
+openai-agents
+instructor
+llama-index-llms-openai
+haystack-ai
+dspy
+openai[aiohttp]
+fastapi
+flask
+django
+gevent
+celery

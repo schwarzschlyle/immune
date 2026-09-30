@@ -1,0 +1,15 @@
+name: False positive
+description: Immune flagged or changed legitimate traffic.
+labels: [false-positive]
+body:
+  - type: input
+    id: archetype
+    attributes: {label: Call-site archetype, description: From `immune status`.}
+  - type: textarea
+    id: verdict
+    attributes: {label: Verdict, description: Output of `immune test` for a sanitized example.}
+    validations: {required: true}
+  - type: textarea
+    id: why
+    attributes: {label: Why this traffic is legitimate}
+    validations: {required: true}

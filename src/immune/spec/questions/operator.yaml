@@ -1,0 +1,52 @@
+panel: operator
+questions:
+  - key: archetype
+    kind: choice
+    text: Which description best fits the assistant defined by these operator instructions?
+    options:
+      conversational_assistant: A general conversational assistant
+      customer_service: A customer service or sales assistant for a business
+      knowledge_qa: Answers questions from provided documents or a knowledge base
+      summarize_or_transform: Summarizes, translates, rewrites or transforms provided content
+      extract_or_classify: Extracts fields from or classifies provided content
+      code_assistant: Writes, edits or runs code
+      autonomous_agent: Plans and takes actions with tools on its own
+      content_generation: Writes marketing, creative or other new content
+      companion: A companion, friend, character or emotional support chatbot
+      judge_or_evaluator: Grades, scores or evaluates other content
+      router_or_orchestrator: Routes requests or coordinates other agents
+      unknown: None of these, or cannot tell
+  - key: talks_to_end_users
+    kind: noul
+    text: The assistant's replies are shown directly to members of the public.
+  - key: may_talk_to_minors
+    kind: noul
+    text: People under 18 may use this assistant.
+  - key: handles_personal_data
+    kind: noul
+    text: The assistant handles personal or account data about people.
+  - key: processes_external_content
+    kind: noul
+    text: The assistant reads documents, web pages, emails or other outside content.
+  - key: represents_business
+    kind: noul
+    text: The assistant speaks for a business to its customers.
+  - key: regulated_domain
+    kind: choice
+    text: Which regulated domain does the assistant give guidance in?
+    options:
+      none: No regulated domain
+      health: Health or medicine
+      legal: Law
+      finance: Finance or investing
+      other_regulated: Another regulated profession
+      unknown: Cannot tell
+  - key: grants_unlimited_discretion
+    kind: noul
+    text: The instructions let the assistant decide prices, refunds, discounts or payments without limits.
+  - key: demands_unconditional_compliance
+    kind: noul
+    text: The instructions tell the assistant to always agree with or obey the user.
+  - key: hides_ai_identity
+    kind: noul
+    text: The instructions tell the assistant to hide that it is an AI.

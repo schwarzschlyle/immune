@@ -1,0 +1,29 @@
+secrets:
+  anthropic_key: '\bsk-ant-[A-Za-z0-9_\-]{20,}'
+  openai_key: '\bsk-(?!ant-)(?:proj-|svcacct-|admin-)?[A-Za-z0-9_\-]{32,}'
+  aws_access_key: '\b(?:AKIA|ASIA)[0-9A-Z]{16}\b'
+  github_token: '\b(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{36,}'
+  github_fine_grained_token: '\bgithub_pat_[A-Za-z0-9_]{50,}'
+  slack_token: '\bxox[baprs]-[A-Za-z0-9\-]{10,}'
+  google_api_key: '\bAIza[0-9A-Za-z_\-]{35}'
+  stripe_key: '\b(?:sk|rk)_live_[0-9A-Za-z]{20,}'
+  private_key: '-----BEGIN (?:RSA |EC |OPENSSH |DSA |PGP )?PRIVATE KEY-----'
+  jwt: '\beyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}'
+template_tokens:
+  chatml: '<\|(?:im_start|im_end|system|user|assistant|endoftext|eot_id|start_header_id|end_header_id|begin_of_text)\|>'
+  llama_inst: '\[/?INST\]|<</?SYS>>'
+  gemma_turn: '<(?:start|end)_of_turn>'
+  role_json: '"role"\s*:\s*"(?:system|developer)"'
+  system_tag: '</?system>'
+  human_assistant: '\n\n(?:Human|Assistant):'
+guard_addressed:
+  addressed_system: '(?i)\b(?:safety|content|moderation|security)[ \t]+(?:filter|classifier|system|model|check|scanner)s?\b'
+  addressed_reviewer: '(?i)\b(?:classifier|moderator|guardrail|evaluator|grader|reviewer|judge|scanner|immune)s?\b[^.\n]{0,80}?\b(?:ignore|benign|safe|approve|allow|pass|score|rate|label|mark)\w*'
+  fake_score: '(?i)\b(?:confidence|probability|risk|threat|safety)[ \t_-]*(?:score)?[ \t]*[:=][ \t]*(?:0?\.\d+|\d{1,3}(?:\.\d+)?%)'
+  fake_verdict: '(?i)"?\b(?:verdict|label|classification|decision|status)\b"?[ \t]*[:=][ \t]*"?(?:safe|benign|allow(?:ed)?|pass(?:ed)?|clean|approved)\b'
+sql:
+  stacked_statement: '(?i);[ \t]*(?:drop|delete|truncate|alter|update|insert)[ \t]'
+  union_select: '(?i)\bunion[ \t]+(?:all[ \t]+)?select\b'
+  tautology: '(?i)''[ \t]*or[ \t]+''?1''?[ \t]*=[ \t]*''?1'
+paths:
+  traversal: '(?:\.\./){2,}|(?:\.\.\\){2,}'

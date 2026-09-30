@@ -1,0 +1,12 @@
+panel: data
+questions:
+  - key: instructions_to_ai
+    kind: noul
+    views: true
+    text: The text in {item} contains instructions addressed to an AI assistant.
+  - key: exfil_request
+    kind: noul
+    text: The text in {item} asks for data to be sent somewhere, placed in a link or image, or shared with someone.
+  - key: impersonation
+    kind: noul
+    text: The text in {item} claims to come from the system, the developer, the operator or the user.

@@ -1,0 +1,754 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/schwarzschlyle/immune/main/schema/immune.schema.json",
+  "$defs": {
+    "AlertSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "default": true,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "window_s": {
+          "default": 900.0,
+          "exclusiveMinimum": 0,
+          "title": "Window S",
+          "type": "number"
+        },
+        "ratio": {
+          "default": 5.0,
+          "exclusiveMinimum": 1,
+          "title": "Ratio",
+          "type": "number"
+        },
+        "min_fired": {
+          "default": 5,
+          "minimum": 1,
+          "title": "Min Fired",
+          "type": "integer"
+        },
+        "absolute_rate": {
+          "default": 0.05,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Absolute Rate",
+          "type": "number"
+        },
+        "cooldown_s": {
+          "default": 3600.0,
+          "minimum": 0,
+          "title": "Cooldown S",
+          "type": "number"
+        }
+      },
+      "title": "AlertSettings",
+      "type": "object"
+    },
+    "EchoSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "enforce": {
+          "default": false,
+          "title": "Enforce",
+          "type": "boolean"
+        },
+        "min_agreement": {
+          "default": 0.2,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Min Agreement",
+          "type": "number"
+        }
+      },
+      "title": "EchoSettings",
+      "type": "object"
+    },
+    "HeadSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "artifact": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Artifact"
+        }
+      },
+      "title": "HeadSettings",
+      "type": "object"
+    },
+    "LangSmithSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "const": "auto",
+              "type": "string"
+            }
+          ],
+          "default": "auto",
+          "title": "Enabled"
+        },
+        "project": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Project"
+        },
+        "inputs": {
+          "default": "masked",
+          "enum": [
+            "masked",
+            "none",
+            "raw"
+          ],
+          "title": "Inputs",
+          "type": "string"
+        },
+        "jev_runs": {
+          "default": true,
+          "title": "Jev Runs",
+          "type": "boolean"
+        },
+        "feedback": {
+          "default": true,
+          "title": "Feedback",
+          "type": "boolean"
+        },
+        "mark_blocked_as_error": {
+          "default": false,
+          "title": "Mark Blocked As Error",
+          "type": "boolean"
+        }
+      },
+      "title": "LangSmithSettings",
+      "type": "object"
+    },
+    "LimitSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "max_identical_tool_calls": {
+          "default": 3,
+          "minimum": 1,
+          "title": "Max Identical Tool Calls",
+          "type": "integer"
+        },
+        "max_tool_calls_per_turn": {
+          "default": 25,
+          "minimum": 1,
+          "title": "Max Tool Calls Per Turn",
+          "type": "integer"
+        },
+        "session_ttl_s": {
+          "default": 86400.0,
+          "exclusiveMinimum": 0,
+          "title": "Session Ttl S",
+          "type": "number"
+        },
+        "max_sessions": {
+          "default": 50000,
+          "minimum": 1,
+          "title": "Max Sessions",
+          "type": "integer"
+        }
+      },
+      "title": "LimitSettings",
+      "type": "object"
+    },
+    "Mode": {
+      "enum": [
+        "auto",
+        "observe",
+        "strict",
+        "off"
+      ],
+      "title": "Mode",
+      "type": "string"
+    },
+    "PrivacySettings": {
+      "additionalProperties": false,
+      "properties": {
+        "redact_before_sensor": {
+          "default": true,
+          "title": "Redact Before Sensor",
+          "type": "boolean"
+        },
+        "log": {
+          "default": "redacted",
+          "enum": [
+            "redacted",
+            "off",
+            "full"
+          ],
+          "title": "Log",
+          "type": "string"
+        },
+        "profiling": {
+          "default": "jev",
+          "enum": [
+            "jev",
+            "local"
+          ],
+          "title": "Profiling",
+          "type": "string"
+        },
+        "verdict_log": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Verdict Log"
+        }
+      },
+      "title": "PrivacySettings",
+      "type": "object"
+    },
+    "PromotionSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "default": true,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "max_firing_rate": {
+          "default": 0.001,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Max Firing Rate",
+          "type": "number"
+        },
+        "min_calls": {
+          "default": 5000,
+          "minimum": 1,
+          "title": "Min Calls",
+          "type": "integer"
+        },
+        "min_days": {
+          "default": 14.0,
+          "minimum": 0,
+          "title": "Min Days",
+          "type": "number"
+        }
+      },
+      "title": "PromotionSettings",
+      "type": "object"
+    },
+    "SensorSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "model": {
+          "default": "jev-1.13.0",
+          "title": "Model",
+          "type": "string"
+        },
+        "timeout_ms": {
+          "default": 800,
+          "maximum": 30000,
+          "minimum": 50,
+          "title": "Timeout Ms",
+          "type": "integer"
+        },
+        "api_key": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Api Key"
+        },
+        "api_keys": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Api Keys",
+          "type": "array"
+        },
+        "requests_per_minute": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": 1200,
+          "title": "Requests Per Minute"
+        },
+        "coalesce": {
+          "default": false,
+          "title": "Coalesce",
+          "type": "boolean"
+        },
+        "breaker_error_rate": {
+          "default": 0.2,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Breaker Error Rate",
+          "type": "number"
+        },
+        "breaker_window_s": {
+          "default": 60.0,
+          "exclusiveMinimum": 0,
+          "title": "Breaker Window S",
+          "type": "number"
+        },
+        "breaker_cooldown_s": {
+          "default": 30.0,
+          "exclusiveMinimum": 0,
+          "title": "Breaker Cooldown S",
+          "type": "number"
+        },
+        "deadline_margin_ms": {
+          "default": 250,
+          "maximum": 10000,
+          "minimum": 0,
+          "title": "Deadline Margin Ms",
+          "type": "integer"
+        },
+        "on_outage": {
+          "default": "act_on_candidates",
+          "enum": [
+            "act_on_candidates",
+            "pass"
+          ],
+          "title": "On Outage",
+          "type": "string"
+        }
+      },
+      "title": "SensorSettings",
+      "type": "object"
+    },
+    "SiteSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "archetype": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Archetype"
+        },
+        "user_facing": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "User Facing"
+        },
+        "organs": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Organs",
+          "type": "array"
+        },
+        "enforce": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Enforce",
+          "type": "array"
+        },
+        "observe": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Observe",
+          "type": "array"
+        },
+        "tools": {
+          "additionalProperties": {
+            "$ref": "#/$defs/ToolSettings"
+          },
+          "title": "Tools",
+          "type": "object"
+        },
+        "allowed_destinations": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Allowed Destinations",
+          "type": "array"
+        },
+        "echo": {
+          "$ref": "#/$defs/EchoSettings"
+        },
+        "streaming": {
+          "anyOf": [
+            {
+              "enum": [
+                "progressive",
+                "buffered"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Streaming"
+        },
+        "enabled": {
+          "default": true,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "vaccines": {
+          "$ref": "#/$defs/VaccineSwitches"
+        }
+      },
+      "title": "SiteSettings",
+      "type": "object"
+    },
+    "StateSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "backend": {
+          "default": "local",
+          "enum": [
+            "local",
+            "sqlite",
+            "redis"
+          ],
+          "title": "Backend",
+          "type": "string"
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Url"
+        },
+        "path": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path"
+        },
+        "key_prefix": {
+          "default": "immune:",
+          "title": "Key Prefix",
+          "type": "string"
+        },
+        "failover_cooldown_s": {
+          "default": 30.0,
+          "exclusiveMinimum": 0,
+          "title": "Failover Cooldown S",
+          "type": "number"
+        }
+      },
+      "title": "StateSettings",
+      "type": "object"
+    },
+    "TelemetrySettings": {
+      "additionalProperties": false,
+      "properties": {
+        "opentelemetry": {
+          "default": true,
+          "title": "Opentelemetry",
+          "type": "boolean"
+        },
+        "alerts": {
+          "$ref": "#/$defs/AlertSettings"
+        },
+        "langsmith": {
+          "$ref": "#/$defs/LangSmithSettings"
+        }
+      },
+      "title": "TelemetrySettings",
+      "type": "object"
+    },
+    "ToolSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "egress": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Egress"
+        },
+        "writes_state": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Writes State"
+        },
+        "executes": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Executes"
+        },
+        "reads_private": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reads Private"
+        },
+        "irreversible": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Irreversible"
+        },
+        "allowed_destinations": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Allowed Destinations",
+          "type": "array"
+        }
+      },
+      "title": "ToolSettings",
+      "type": "object"
+    },
+    "VaccineSettings": {
+      "additionalProperties": false,
+      "properties": {
+        "disabled": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Disabled",
+          "type": "array"
+        },
+        "enabled": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Enabled",
+          "type": "array"
+        },
+        "paths": {
+          "default": [],
+          "items": {
+            "format": "path",
+            "type": "string"
+          },
+          "title": "Paths",
+          "type": "array"
+        },
+        "entry_points": {
+          "default": true,
+          "title": "Entry Points",
+          "type": "boolean"
+        },
+        "allow_floor_changes": {
+          "default": false,
+          "title": "Allow Floor Changes",
+          "type": "boolean"
+        }
+      },
+      "title": "VaccineSettings",
+      "type": "object"
+    },
+    "VaccineSwitches": {
+      "additionalProperties": false,
+      "properties": {
+        "disabled": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Disabled",
+          "type": "array"
+        },
+        "enabled": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Enabled",
+          "type": "array"
+        }
+      },
+      "title": "VaccineSwitches",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "mode": {
+      "$ref": "#/$defs/Mode",
+      "default": "auto"
+    },
+    "on_internal_error": {
+      "default": "pass",
+      "enum": [
+        "pass",
+        "block"
+      ],
+      "title": "On Internal Error",
+      "type": "string"
+    },
+    "on_block": {
+      "default": "respond",
+      "enum": [
+        "respond",
+        "raise"
+      ],
+      "title": "On Block",
+      "type": "string"
+    },
+    "streaming": {
+      "default": "progressive",
+      "enum": [
+        "progressive",
+        "buffered"
+      ],
+      "title": "Streaming",
+      "type": "string"
+    },
+    "canary": {
+      "default": true,
+      "title": "Canary",
+      "type": "boolean"
+    },
+    "state_dir": {
+      "anyOf": [
+        {
+          "format": "path",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "State Dir"
+    },
+    "sensor": {
+      "$ref": "#/$defs/SensorSettings"
+    },
+    "privacy": {
+      "$ref": "#/$defs/PrivacySettings"
+    },
+    "promotion": {
+      "$ref": "#/$defs/PromotionSettings"
+    },
+    "limits": {
+      "$ref": "#/$defs/LimitSettings"
+    },
+    "state": {
+      "$ref": "#/$defs/StateSettings"
+    },
+    "telemetry": {
+      "$ref": "#/$defs/TelemetrySettings"
+    },
+    "heads": {
+      "$ref": "#/$defs/HeadSettings"
+    },
+    "vaccines": {
+      "$ref": "#/$defs/VaccineSettings"
+    },
+    "sites": {
+      "additionalProperties": {
+        "$ref": "#/$defs/SiteSettings"
+      },
+      "title": "Sites",
+      "type": "object"
+    },
+    "endpoints": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Endpoints",
+      "type": "array"
+    }
+  },
+  "title": "Settings",
+  "type": "object"
+}

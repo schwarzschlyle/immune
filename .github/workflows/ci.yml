@@ -1,0 +1,119 @@
+name: ci
+
+on:
+  push:
+    branches: [main, staging, dev]
+  pull_request:
+    branches: [main, staging, dev]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  promotion:
+    # Changes flow dev -> staging -> main. release/* branches (the changelog roll-over) may target staging, and
+    # hotfix/* branches staging or main.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          BASE: ${{ github.base_ref }}
+          HEAD: ${{ github.head_ref }}
+        run: |
+          case "$BASE" in
+            main) allowed="staging" ;;
+            staging) allowed="dev" ;;
+            *) exit 0 ;;
+          esac
+          # main flows back into staging after a release (the back-merge pull request).
+          if [ "$BASE" = "staging" ] && { [ "$HEAD" = "main" ] || [[ "$HEAD" == release/* ]]; }; then exit 0; fi
+          if [ "$HEAD" != "$allowed" ] && [[ "$HEAD" != hotfix/* ]]; then
+            echo "::error::pull requests into $BASE must come from $allowed or a hotfix/* branch, not $HEAD"
+            exit 1
+          fi
+
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - run: pip install -e ".[dev]"
+      - run: ruff check .
+      - run: ruff format --check .
+      - run: mypy
+      - run: pip-audit --progress-spinner off --skip-editable
+      - run: python tools/api_check.py
+      - run: python tools/import_budget.py
+      - run: pytest tests/live -q
+        env:
+          IMMUNE_LIVE_TRANSPORT: stub
+
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ["3.11", "3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python }}
+      - run: pip install -e ".[dev,claude-agent,redis]"
+      - run: coverage run -m pytest
+      - run: coverage report --fail-under=90
+      - run: immune replay
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - run: pip install -e ".[dev,notebook]" "fastapi>=0.115" "uvicorn>=0.30"
+      - run: pytest tests/docs -q
+        env:
+          IMMUNE_RUN_TOUR: "1"
+      - run: mkdocs build --strict
+
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - run: pip install build twine
+      - run: python -m build
+      - run: twine check --strict dist/*
+      - run: python tools/check_wheel.py dist
+
+  performance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - run: pip install -e ".[dev]"
+      - run: python bench/run.py --check bench/budgets.json

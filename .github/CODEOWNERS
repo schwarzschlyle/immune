@@ -1,0 +1,4 @@
+*                          @immune-ai/maintainers
+/src/immune/spec/          @immune-ai/maintainers @immune-ai/detection
+/src/immune/intercept/     @immune-ai/maintainers
+/.github/workflows/        @immune-ai/maintainers

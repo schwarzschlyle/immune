@@ -1,0 +1,158 @@
+input.override:
+  features:
+    - {signal: override, reduce: max_view}
+    - {signal: override_alt, reduce: max_view, transform: positive, weight: 0.5}
+    - {finding: inbound.template_tokens, weight: 2.0}
+input.framing_bypass:
+  features:
+    - {signal: framing_bypass, reduce: max_view}
+input.extraction:
+  features:
+    - {signal: extraction}
+input.obfuscation:
+  features:
+    - {signal: obfuscation}
+    - {finding: inbound.encoded_payload, weight: 1.0}
+    - {finding: inbound.smuggled_characters, weight: 1.5}
+input.judge_manipulation:
+  features:
+    - {signal: judge_manipulation, reduce: max_view}
+    - {signal: override, reduce: divergence, weight: 0.5}
+    - {finding: inbound.guard_addressed, weight: 2.0}
+input.off_task:
+  features:
+    - {signal: off_task}
+input.resource_abuse:
+  features:
+    - {signal: resource_abuse}
+input.severe_harm:
+  features:
+    - {signal: harmful_request, options: [weapons_mass_casualty, sexual_minors]}
+input.harmful_request:
+  features:
+    - signal: harmful_request
+      options: [weapons_other, cyber_attack, fraud_scams, hate_harassment, self_harm_methods, dangerous_activity, sexual_content, other_harm]
+input.crisis:
+  features:
+    - {signal: crisis, options: [suicide_or_self_harm, medical_emergency, danger_from_others, abuse_disclosure]}
+care.minor_signals:
+  features:
+    - {signal: minor_signals}
+data.instructions:
+  features:
+    - {signal: instructions_to_ai, reduce: max_view}
+    - {finding: inbound.template_tokens, weight: 1.5}
+    - {finding: inbound.hidden_content, weight: 1.0}
+data.exfil_request:
+  features:
+    - {signal: exfil_request}
+data.impersonation:
+  features:
+    - {signal: impersonation}
+tool.unrequested:
+  features:
+    - {signal: serves_request, transform: invert}
+tool.content_induced:
+  features:
+    - {signal: content_induced}
+tool.exceeds_request:
+  features:
+    - {signal: exceeds_request}
+output.task_deviation:
+  features:
+    - {signal: task_fidelity, transform: invert}
+output.follows_data_instructions:
+  features:
+    - {signal: follows_data_instructions}
+output.reveals_instructions:
+  features:
+    - {signal: reveals_instructions}
+output.private_data:
+  features:
+    - {signal: private_data}
+output.severe_harm:
+  features:
+    - {signal: harmful_output, options: [weapons_mass_casualty, sexual_minors]}
+output.harmful:
+  features:
+    - signal: harmful_output
+      options: [weapons_other, cyber_attack, fraud_scams, hate_harassment, self_harm_methods, dangerous_activity, sexual_content, other_harm]
+output.ungrounded:
+  features:
+    - {signal: claims, options: [unsupported, contradicts]}
+output.false_action_claim:
+  features:
+    - {signal: false_action_claim}
+output.claims_human:
+  features:
+    - {signal: claims_human}
+output.solicits_secrets:
+  features:
+    - {signal: solicits_secrets}
+output.manipulation:
+  features:
+    - {signal: manipulation}
+business.unauthorized_commitment:
+  features:
+    - {signal: makes_commitment}
+    - {signal: commitment_supported, transform: invert}
+care.minor_unsafe:
+  features:
+    - {signal: minor_unsafe}
+
+# Candidate threats: code nominates, Jev decides. One question per candidate (spec/questions/candidates.yaml).
+inbound.smuggled_characters:
+  features:
+    - {signal: smuggled_text_steers}
+inbound.hidden_content:
+  features:
+    - {signal: hidden_content_for_ai}
+inbound.template_tokens:
+  features:
+    - {signal: template_tokens_hijack}
+inbound.encoded_payload:
+  features:
+    - {signal: encoded_instructions}
+inbound.guard_addressed:
+  features:
+    - {signal: guard_manipulation}
+tool.destination_provenance:
+  features:
+    - {signal: destination_requested, transform: invert}
+tool.secret_egress:
+  features:
+    - {signal: egress_unintended}
+tool.loop:
+  features:
+    - {signal: loop_no_progress}
+tool.tainted_irreversible:
+  features:
+    - {signal: irreversible_requested, transform: invert}
+tool.dangerous_command:
+  features:
+    - {signal: command_dangerous}
+tool.description_poisoning:
+  features:
+    - {signal: tool_description_instructions}
+output.exfil_link:
+  features:
+    - {signal: link_exfiltrates}
+output.unsafe_markup:
+  features:
+    - {signal: markup_dangerous}
+output.secret_leak:
+  # Jev can't verify that a key is real, so its answers are compressed: in a live check, keys used as real scored
+  # 0.51-0.68 and documentation samples 0.07-0.13. This provisional head puts the cut near 0.4 until
+  # `immune evidence fit` calibrates it on labeled data.
+  bias: 1.2
+  features:
+    - {signal: secret_real, weight: 2.0}
+output.canary_leak:
+  features:
+    - {signal: canary_prompt_leak}
+output.prompt_copy:
+  features:
+    - {signal: copy_confidential}
+business.ungrounded_number:
+  features:
+    - {signal: number_unsupported}
