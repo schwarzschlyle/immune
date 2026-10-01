@@ -18,6 +18,8 @@ each one is called out under **Changed** or **Removed**.
   `check`, `drift`), licensed evidence, recorded Jev answers replayed offline in CI, measured cards, and maturity
   gates (`experimental`, `stable`, `deprecated`). The guide is `docs/contributing/vaccine-laboratory.md`.
 - A `laboratory` CI job, a weekly live drift check, and a vaccine proposal issue form.
+- A user guide chapter, *Designing and testing your own vaccines*, that walks through one vaccine from the rule to
+  enforcement, and a step-by-step "Build a vaccine for your app" section in the vaccines guide.
 
 ### Vaccines
 
@@ -32,9 +34,9 @@ each one is called out under **Changed** or **Removed**.
 
 ### Changed
 
+- A new logo and brand across the README, the documentation site (now with light and dark themes) and the user guide.
 - A vaccine that is switched off now costs nothing: its Jev questions are not asked and its detectors don't run.
   Before, switching a vaccine off only stopped it acting.
-
 - The user guide is published at https://immune-user-guide.vercel.app/, and the package's Documentation link points there.
 
 ### Fixed
