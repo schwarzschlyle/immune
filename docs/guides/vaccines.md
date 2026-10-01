@@ -5,24 +5,35 @@ never give, an action that needs a person. It is a small YAML file (optionally b
 compiles into the same spec as the 49 built-in threats, so it gets modes, per-site settings, promotion, verdicts,
 OpenTelemetry and LangSmith for free.
 
-The [developer guide](developer-guide.md#8-vaccines-building-your-own-protections) walks through building one, and
-[project setup](setup.md#4-add-vaccines) shows where the files go. This page is the reference.
+This page walks through building one for your app, step by step, then documents every field and command.
+[Project setup](setup.md#4-add-vaccines) shows where the files go in a project.
 
-## Quick start
+## Build a vaccine for your app
+
+Everything on this page ships in `pip install immune-ai`. Your vaccines live in your own repository, next to your
+code, and you don't need to contribute anything to Immune. (To add a vaccine to the library that ships *with* Immune,
+see [the vaccine laboratory](../contributing/vaccine-laboratory.md) instead.)
+
+A vaccine answers four questions:
+
+| Question | Field | Example |
+| --- | --- | --- |
+| Where does Immune look? | `stage` | `output`: the reply. Or `input`, `data` (documents, tool results) or `tool` (tool calls) |
+| How does it recognize the problem? | `detect` | Keywords, a regular expression, questions for Jev, a tool rule or a Python function |
+| What happens when it fires? | `respond` | Rewrite the reply with your `message`, hold a tool call, and so on |
+| How do you know it works? | `tests` | Examples that must fire, and near misses that must not |
+
+### 1. Create it
+
+Start from a commented template:
 
 ```bash
-immune vaccines new acme.no_competitor_mentions          # writes vaccines/acme.no_competitor_mentions.yaml
-$EDITOR vaccines/acme.no_competitor_mentions.yaml
-immune vaccines test                                      # its examples pass?
-immune vaccines trial vaccines/acme.no_competitor_mentions.yaml   # how often would it fire on everyday traffic?
+immune vaccines new acme.no_competitor_mentions --kind keywords --stage output
+# writes vaccines/acme.no_competitor_mentions.yaml for you to edit
 ```
 
-```yaml
-vaccines:
-  paths: [vaccines/]
-```
-
-Or build, test and trial one in a single step from examples:
+Or build one from examples in a single step. `vaccinate` writes the file only if the vaccine passes its own examples,
+and it runs a trial too:
 
 ```bash
 immune vaccinate acme.no_competitor_mentions --stage output \
@@ -31,6 +42,105 @@ immune vaccinate acme.no_competitor_mentions --stage output \
   --negative "Our Classic is \$9." \
   --message "I can only talk about Acme products."
 ```
+
+Either way you end up with a file like this:
+
+```yaml
+id: acme.no_competitor_mentions
+title: The reply recommends a competitor
+description: The reply suggests the customer eat at a rival restaurant instead of Acme Burgers.
+stage: output
+detect:
+  keywords: ["Burger Palace", "McRival"]
+  confirm: jev                        # Jev confirms each match, so "we're next to Burger Palace" passes
+respond:
+  message: "I can only talk about Acme products."
+tests:
+  positives: ["You might prefer the Burger Palace deal."]
+  negatives: ["Our Classic is $9."]
+```
+
+Use your own namespace for the id (your company or app name, such as `acme.`); `immune.` is reserved for the
+library. The [file reference](#file-reference) below lists every field.
+
+### 2. Turn it on
+
+Point Immune at the folder, in `immune.yaml`:
+
+```yaml
+vaccines:
+  paths: [vaccines/]
+```
+
+Or in code: `immune.init(vaccines=["vaccines/"])`. Every vaccine starts **observed**: Immune records its hits in
+verdicts but changes nothing yet.
+
+### 3. Test its examples
+
+```bash
+immune vaccines test                                          # every vaccine in vaccines.paths
+immune vaccines test vaccines/acme.no_competitor_mentions.yaml
+```
+
+Each positive must fire and each negative must pass.
+- **Keywords, regex, tool rules and Python functions** are checked for real, offline and without a key.
+- **Jev questions and `confirm: jev`** need Jev to judge meaning. Offline, a scripted stand-in answers, which checks
+  the wiring but not the meaning. In particular, a negative that contains a keyword "fails" offline because the
+  stand-in confirms every match. Add `--live` (with `TYPESAFE_API_KEY` set) for the real check.
+
+### 4. Trial it on everyday traffic
+
+Tests show it catches what you meant; a trial shows it leaves everything else alone:
+
+```bash
+immune vaccines trial acme.no_competitor_mentions --corpus my_replies.jsonl --max-rate 0.01 --live
+```
+
+`--corpus` takes your own masked traffic, one message per line or as JSON Lines, and predicts false alarms best.
+`--max-rate 0.01` exits with an error if more than 1% of the samples fire, which is handy in CI.
+
+### 5. Test it in your own test suite
+
+The `immune_harness` pytest fixture is registered when you install the package. It runs your real code against a
+scripted model, with your vaccines loaded; [Testing and trials](#testing-and-trials) below has a complete example. To
+keep CI offline for vaccines Jev judges, record Jev's answers once with `immune.testing.RecordingSensor` and replay
+them with `ReplaySensor`, as the [developer guide](developer-guide.md#132-what-the-testing-kit-gives-you) shows.
+
+### 6. Deploy it observed, then enforce it
+
+Ship it observed and watch its hits in verdicts, logs, OpenTelemetry or LangSmith. When they look right, enforce it
+at the sites where it matters (or set `enforcement: enforce` in the file):
+
+```yaml
+sites:
+  ordering:
+    enforce: [acme.no_competitor_mentions]
+```
+
+`immune vaccines list --custom` shows whether each of your vaccines is on, and which setting decided it.
+
+### Your vaccines and the library
+
+| | Your vaccines | The vaccine library |
+| --- | --- | --- |
+| Who writes them | You, for your app | Immune's contributors, for problems many apps share |
+| Where they live | Your repository's `vaccines/` folder | Inside the `immune-ai` package |
+| Ids | Your namespace, such as `acme.` | `immune.<domain>.<name>` |
+| When they're on | As soon as `vaccines.paths` loads them (unless `default: off`) | Only when `vaccines.enabled` names them |
+| How they're checked | `test`, `trial` and your own test suite | The same, plus the laboratory's measured cards and maturity gates |
+
+You can also start from a library vaccine:
+`immune vaccines fork immune.health.dosage_instructions --as acme.dosage_instructions` copies it into your
+`vaccines/` folder to tailor. The laboratory's tool for recording, fitting and measured cards lives in Immune's
+repository rather than the package. For your own vaccines, `test --live` and `trial --corpus` on your real traffic
+answer the two questions that matter: does it catch what you meant, and does it leave everything else alone?
+
+### When you need a key
+
+| Detector | Without `TYPESAFE_API_KEY` | With it |
+| --- | --- | --- |
+| Keywords, regex, tool rules, Python | Fully tested and trialed offline | Same |
+| Jev questions, `confirm: jev` | Wiring checked by a scripted stand-in | `--live` tests and trials judge meaning; recorded answers keep CI offline |
 
 ## File reference
 
