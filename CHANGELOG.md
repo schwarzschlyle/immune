@@ -7,6 +7,8 @@ each one is called out under **Changed** or **Removed**.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-01
+
 ### Added
 
 - **The vaccine library:** vaccines that ship with Immune for problems many applications share. Each is off until
@@ -37,7 +39,7 @@ each one is called out under **Changed** or **Removed**.
 - A new logo and brand across the README, the documentation site (now with light and dark themes) and the user guide.
 - A vaccine that is switched off now costs nothing: its Jev questions are not asked and its detectors don't run.
   Before, switching a vaccine off only stopped it acting.
-- The user guide is published at https://immune-user-guide.vercel.app/, and the package's Documentation link points there.
+- The user guide is published at https://schwarzschlyle.github.io/immune-user-guide/, and the package's Documentation link points there.
 
 ### Fixed
 
@@ -104,5 +106,6 @@ weights are provisional until they are trained on labeled data.
 - Personal data and secrets are masked before anything is sent to Jev; state files are owner-only.
 - `SECURITY.md` sets response targets: acknowledgement in 2 business days, triage in 5, critical fixes in 14 days.
 
-[Unreleased]: https://github.com/schwarzschlyle/immune/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/schwarzschlyle/immune/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/schwarzschlyle/immune/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/schwarzschlyle/immune/releases/tag/v0.1.0

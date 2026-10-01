@@ -22,5 +22,5 @@ and graders) and underneath the SDKs and frameworks you already use.
 - **Visible.** Every call gets a verdict, streamed to your logs, OpenTelemetry and LangSmith.
 
 Start with the [quickstart](quickstart.md), then the [developer guide](guides/developer-guide.md). The
-[user guide](https://immune-user-guide.vercel.app/) teaches Immune topic by topic, with real outputs: integrating with OpenAI,
+[user guide](https://schwarzschlyle.github.io/immune-user-guide/) teaches Immune topic by topic, with real outputs: integrating with OpenAI,
 LangChain and LangGraph, reading verdicts, vaccines, testing, production and a cookbook.
