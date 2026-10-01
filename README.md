@@ -1,11 +1,9 @@
-<p align="center">
+<h1 align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/schwarzschlyle/immune/main/docs/assets/immune-logo-dark.png">
-    <img alt="Immune" src="https://raw.githubusercontent.com/schwarzschlyle/immune/main/docs/assets/immune-logo.png" width="140">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/schwarzschlyle/immune/main/docs/assets/immune-logo-horizontal-dark.svg">
+    <img alt="Immune" src="https://raw.githubusercontent.com/schwarzschlyle/immune/main/docs/assets/immune-logo-horizontal.svg" width="300">
   </picture>
-</p>
-
-<h1 align="center">Immune</h1>
+</h1>
 
 <p align="center">
   <strong>A runtime immune system for LLM applications.</strong><br>

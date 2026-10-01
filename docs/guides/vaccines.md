@@ -14,6 +14,9 @@ Everything on this page ships in `pip install immune-ai`. Your vaccines live in 
 code, and you don't need to contribute anything to Immune. (To add a vaccine to the library that ships *with* Immune,
 see [the vaccine laboratory](../contributing/vaccine-laboratory.md) instead.)
 
+The user guide's [Designing and testing your own vaccines](https://immune-user-guide.vercel.app/#/12b_designing_vaccines)
+walks through one complete example with real outputs.
+
 A vaccine answers four questions:
 
 | Question | Field | Example |
