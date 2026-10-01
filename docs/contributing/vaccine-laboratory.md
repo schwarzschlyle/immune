@@ -4,6 +4,10 @@ Immune ships a library of **vaccines**: protections against problems many applic
 assistant giving dosage advice or a support bot recommending investments. Users switch them on with one line
 of configuration. This page is for contributors who develop them, the vaccine scientists.
 
+Building a vaccine for your own app? You don't need the laboratory or this repository: everything is in the
+installed package, and [Build a vaccine for your app](../guides/vaccines.md#build-a-vaccine-for-your-app) walks
+through it.
+
 A library vaccine is an ordinary vaccine file with stricter rules, measured in the laboratory before it ships:
 
 | | Custom vaccine (a team's own) | Library vaccine (ships with Immune) |

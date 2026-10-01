@@ -2360,8 +2360,9 @@ vaccines:
   paths: []                     # vaccine files or directories, e.g. [vaccines/]
   entry_points: true            # also load the immune.vaccines entry point group
   disabled: []                  # threat ids or globs to switch off, e.g. [output.claims_human]
-  enabled: []                   # vaccines that declare default: off
+  enabled: []                   # vaccines that declare default: off, e.g. library vaccines [immune.health.*]
   allow_floor_changes: false    # must be true to disable any F1–F10 protection
+  library: true                 # the vaccine library that ships with Immune (all off until enabled); false for none
 sites:                          # per call site, named with immune.site("ordering") (default: none)
   ordering:
     enabled: true
