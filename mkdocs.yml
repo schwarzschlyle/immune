@@ -3,9 +3,21 @@ site_description: A general immune system for LLM applications.
 repo_url: https://github.com/schwarzschlyle/immune
 theme:
   name: material
-  logo: assets/immune-logo.png
+  logo: assets/immune-logo-dark.svg      # the light ring reads on the navy header in both schemes
   favicon: assets/favicon.png
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle: {icon: material/weather-night, name: Switch to dark mode}
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle: {icon: material/weather-sunny, name: Switch to light mode}
   features: [navigation.sections, content.code.copy]
+extra_css: [stylesheets/brand.css]
 nav:
   - Home: index.md
   - Quickstart: quickstart.md
