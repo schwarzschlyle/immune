@@ -5,6 +5,9 @@ body:
   - type: input
     id: archetype
     attributes: {label: Call-site archetype, description: From `immune status`.}
+  - type: input
+    id: vaccine
+    attributes: {label: Library vaccine id, description: "If a library vaccine fired, such as immune.health.diagnosis."}
   - type: textarea
     id: verdict
     attributes: {label: Verdict, description: Output of `immune test` for a sanitized example.}

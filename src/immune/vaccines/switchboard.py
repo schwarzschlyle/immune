@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import fnmatch
 import logging
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 
 from immune.config.settings import Settings, SiteSettings, VaccineSettings
 from immune.config.spec import Spec
@@ -80,6 +80,41 @@ class Switchboard:
         scopes = [("vaccines.disabled", settings.vaccines.disabled)]
         scopes += [(f"sites.{name}.vaccines.disabled", site.vaccines.disabled) for name, site in settings.sites.items()]
         return scopes
+
+
+class Activation:
+    """The vaccines switched off at each site, worked out once per site for one settings revision.
+
+    A vaccine that is off costs nothing per call: its Jev questions are not asked, its detectors don't run, and it
+    isn't counted as evaluated, so it builds no promotion record while off.
+    """
+
+    def __init__(self, switchboard: Switchboard | None = None, vaccines: Iterable[str] = ()) -> None:
+        self._switchboard = switchboard
+        self._vaccines = tuple(vaccines)
+        self._cache: dict[int, tuple[SiteSettings | None, frozenset[str]]] = {}
+
+    def off(self, site: SiteSettings | None) -> frozenset[str]:
+        if self._switchboard is None or not self._vaccines:
+            return frozenset()
+        cached = self._cache.get(id(site))
+        if cached is not None and cached[0] is site:
+            return cached[1]
+        off = frozenset(vaccine for vaccine in self._vaccines if self._switchboard.disabled(vaccine, site))
+        self._cache[id(site)] = (site, off)
+        return off
+
+    def anywhere(self, settings: Settings) -> frozenset[str]:
+        """Vaccines switched on globally or at any configured site."""
+        sites: list[SiteSettings | None] = [None, *settings.sites.values()]
+        return frozenset(vaccine for vaccine in self._vaccines if any(vaccine not in self.off(site) for site in sites))
+
+
+def warn_deprecated(deprecated: Mapping[str, tuple[str, ...]], switched_on: Iterable[str]) -> None:
+    for vaccine in sorted(set(switched_on) & set(deprecated)):
+        replacements = deprecated[vaccine]
+        advice = f"switch on {', '.join(replacements)} instead" if replacements else "it will be removed"
+        _LOGGER.warning("immune: vaccine %s is deprecated; %s", vaccine, advice)
 
 
 def _first(threat_id: str, patterns: Iterable[str]) -> str | None:

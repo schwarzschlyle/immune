@@ -20,7 +20,7 @@ import yaml
 from immune.config.settings import VaccineSettings
 from immune.testing import FakeReply, ImmuneHarness
 from immune.types import Stage
-from immune.vaccines import VaccineLoader
+from immune.vaccines import LibraryCatalog, VaccineLoader
 
 _VOCABULARY = (
     "order delivery burger fries menu table booking weekend receipt refund store opening hours pickup address "
@@ -37,6 +37,7 @@ _CONCURRENT_CALLS = 256
 _WARMUP = 5
 _UNMETERED = {"sensor": {"requests_per_minute": None}}
 _VACCINES = 50
+_LIBRARY = 200
 
 
 class Text:
@@ -70,9 +71,10 @@ class Timings:
 
 
 class Target:
-    def __init__(self, mode: str, reply: str) -> None:
+    def __init__(self, mode: str, reply: str, config: dict[str, Any] | None = None) -> None:
         self._scratch = tempfile.TemporaryDirectory()
-        self.harness = ImmuneHarness(Path(self._scratch.name), script=FakeReply(reply), mode=mode, config=_UNMETERED)
+        settings = {**_UNMETERED, **(config or {})}
+        self.harness = ImmuneHarness(Path(self._scratch.name), script=FakeReply(reply), mode=mode, config=settings)
         self.client = self.harness.openai()
 
     def ask(self, user: str) -> None:
@@ -124,6 +126,7 @@ class Benchmark:
         with targets(_STREAMED_REPLY) as (protected, bare):
             results.update(self._streaming(self._rounds(40), protected, bare))
         results.update(self._vaccines(self._rounds(200)))
+        results.update(self._library(self._rounds(120)))
         return {name: round(value, 3) for name, value in results.items()}
 
     def _rounds(self, rounds: int) -> int:
@@ -154,7 +157,8 @@ class Benchmark:
                 )
                 document = {"id": f"bench.rule_{index}", "title": f"Rule {index}", "stage": "output", "detect": detect}
                 (folder / f"rule_{index}.yaml").write_text(yaml.safe_dump(document), encoding="utf-8")
-            reflexes = VaccineLoader(VaccineSettings(paths=(folder,), entry_points=False)).load().reflexes()
+            settings = VaccineSettings(paths=(folder,), entry_points=False, library=False)
+            reflexes = VaccineLoader(settings).load().reflexes()
         timings = Timings()
         for index in range(_WARMUP + rounds):
             text = self._text.of_size(1_024)
@@ -163,6 +167,38 @@ class Benchmark:
             if index >= _WARMUP:
                 timings.add(time.perf_counter() - started)
         return {f"vaccines.{_VACCINES}.text_ms.p50": timings.median}
+
+    def _library(self, rounds: int) -> dict[str, float]:
+        """What a large vaccine library costs while every vaccine in it is switched off: it should be almost nothing."""
+        with tempfile.TemporaryDirectory(prefix="immune-bench-library-") as scratch:
+            bundle = _library_bundle(Path(scratch), _LIBRARY)
+            configs: dict[str, dict[str, Any]] = {
+                "library": {"vaccines": {"library": str(bundle), "entry_points": False}},
+                "none": {"vaccines": {"library": False, "entry_points": False}},
+            }
+            starts = {label: Timings() for label in configs}
+            for _ in range(max(3, rounds // 10)):
+                for label, config in configs.items():
+                    started = time.perf_counter()
+                    Target("auto", _REPLY, config).close()
+                    starts[label].add(time.perf_counter() - started)
+            calls = {label: Timings() for label in configs}
+            library, none = Target("auto", _REPLY, configs["library"]), Target("auto", _REPLY, configs["none"])
+            try:
+                for index in range(_WARMUP + rounds):
+                    user = self._text.of_size(1_024)
+                    for label, target in (("library", library), ("none", none)):
+                        started = time.perf_counter()
+                        target.ask(user)
+                        if index >= _WARMUP:
+                            calls[label].add(time.perf_counter() - started)
+            finally:
+                library.close()
+                none.close()
+        return {
+            f"library.{_LIBRARY}.init_overhead_ms": starts["library"].median - starts["none"].median,
+            f"library.{_LIBRARY}.off.overhead_ms.p50": calls["library"].median - calls["none"].median,
+        }
 
     def _concurrency(self, threads: int, protected: Target, bare: Target) -> dict[str, float]:
         users = [self._text.of_size(1_024) for _ in range(_CONCURRENT_CALLS)]
@@ -194,6 +230,33 @@ class Benchmark:
             "streaming.ttft_ms.p50": timings["protected"].median,
             "streaming.ttft_overhead_ms.p50": timings["protected"].median - timings["bare"].median,
         }
+
+
+def _library_bundle(folder: Path, count: int) -> Path:
+    """A synthetic library of question, keyword and regex vaccines across stages, all switched off."""
+    for index in range(count):
+        kind = index % 3
+        stage = ("output", "input", "data")[index % 3]
+        if kind == 0:
+            subject = {"output": "The assistant output", "input": "The user message", "data": "The {item}"}[stage]
+            detect: dict[str, Any] = {"questions": [{"key": "present", "text": f"{subject} is about topic {index}."}]}
+        elif kind == 1:
+            detect = {"keywords": [f"product{index}x", f"brand{index}y"]}
+        else:
+            detect = {"regex": [rf"\bCODE{index}-\d{{4,8}}\b"]}
+        document = {
+            "id": f"immune.bench.rule_{index}",
+            "title": f"Rule {index}",
+            "stage": stage,
+            "maturity": "experimental",
+            "default": "off",
+            "detect": detect,
+            "provenance": {"owner": "@bench"},
+        }
+        (folder / f"rule_{index}.yaml").write_text(yaml.safe_dump(document), encoding="utf-8")
+    bundle = folder / "bundle.json"
+    bundle.write_text(json.dumps(LibraryCatalog.from_sources(folder).bundle(folder, {})), encoding="utf-8")
+    return bundle
 
 
 @dataclass(frozen=True, slots=True)

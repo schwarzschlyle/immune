@@ -86,6 +86,9 @@ class VaccineSettings(VaccineSwitches):
     paths: tuple[Path, ...] = ()
     entry_points: bool = True
     allow_floor_changes: bool = False
+    # The vaccine library that ships with Immune (every vaccine in it is off until `enabled` names it): true for the
+    # packaged library, false for none, or a path to a library bundle (.json) or library sources (a folder or file).
+    library: bool | Path = True
 
 
 class PromotionSettings(_Settings):

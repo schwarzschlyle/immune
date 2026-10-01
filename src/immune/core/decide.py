@@ -32,11 +32,13 @@ class EnforcementPolicy:
         promotions: PromotionLedger,
         switchboard: Switchboard | None = None,
         always: frozenset[str] = frozenset(),
+        unpromoted: frozenset[str] = frozenset(),
     ) -> None:
         self._mode = mode
         self._promotions = promotions
         self._switchboard = switchboard
         self._always = always
+        self._unpromoted = unpromoted
 
     def disabled(self, threat_id: str, settings: SiteSettings | None) -> bool:
         return self._switchboard is not None and self._switchboard.disabled(threat_id, settings)
@@ -57,7 +59,7 @@ class EnforcementPolicy:
             return True
         if self._mode is Mode.OBSERVE:
             return floor_holds and floor is not None and floor.id in _OBSERVE_MODE_FLOOR
-        return floor_holds or self._promotions.promoted(site, threat_id)
+        return floor_holds or self._promoted(site, threat_id)
 
     def could_enforce(self, threat: ThreatSpec, site: str, settings: SiteSettings | None) -> bool:
         if settings is not None and self._matches(threat.id, settings.observe):
@@ -70,7 +72,11 @@ class EnforcementPolicy:
             return True
         if self._mode is Mode.OBSERVE:
             return threat.floor is not None and threat.floor.id in _OBSERVE_MODE_FLOOR
-        return threat.floor is not None or self._promotions.promoted(site, threat.id)
+        return threat.floor is not None or self._promoted(site, threat.id)
+
+    def _promoted(self, site: str, threat_id: str) -> bool:
+        # Experimental library vaccines are enforced only by `sites.<site>.enforce`, never by promotion.
+        return threat_id not in self._unpromoted and self._promotions.promoted(site, threat_id)
 
     @staticmethod
     def _floor_holds(floor: FloorSpec, assessment: Assessment, profile: SiteProfile) -> bool:

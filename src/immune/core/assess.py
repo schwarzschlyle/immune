@@ -79,11 +79,12 @@ class Assessor:
         organs: frozenset[str],
         subject: str | None = None,
         site: str | None = None,
+        off: frozenset[str] = frozenset(),
     ) -> list[Assessment]:
         if reading.is_empty:
             return []
         finding_ids = {finding.threat for finding in findings}
-        scores = self._heads.score(self.judged_threats(stage, organs), reading, finding_ids, site)
+        scores = self._heads.score(self.judged_threats(stage, organs, off), reading, finding_ids, site)
         return [self._from_score(score, subject) for score in scores.values()]
 
     def candidates(
@@ -127,15 +128,20 @@ class Assessor:
                 )
         return assessments
 
-    def judged_threats(self, stage: Stage, organs: frozenset[str]) -> list[str]:
+    def judged_threats(self, stage: Stage, organs: frozenset[str], off: frozenset[str] = frozenset()) -> list[str]:
         return [
             threat.id
             for threat in self._spec.threats_for(stage)
-            if threat.detector == "jev" and (threat.organ is None or threat.organ in organs)
+            if threat.detector == "jev" and (threat.organ is None or threat.organ in organs) and threat.id not in off
         ]
 
-    def evaluated_threats(self, stage: Stage, organs: frozenset[str]) -> list[str]:
-        return [threat.id for threat in self._spec.threats_for(stage) if threat.organ is None or threat.organ in organs]
+    def evaluated_threats(self, stage: Stage, organs: frozenset[str], off: frozenset[str] = frozenset()) -> list[str]:
+        """Threats checked at this stage. Vaccines in `off` weren't checked, so they build no promotion record."""
+        return [
+            threat.id
+            for threat in self._spec.threats_for(stage)
+            if (threat.organ is None or threat.organ in organs) and threat.id not in off
+        ]
 
     def _from_score(self, score: HeadScore, subject: str | None) -> Assessment:
         return Assessment(

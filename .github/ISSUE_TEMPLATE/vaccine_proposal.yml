@@ -1,0 +1,32 @@
+name: Vaccine proposal
+description: Propose a vaccine for the library that ships with Immune.
+labels: [vaccine]
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        Library vaccines protect against problems many applications share. Read the
+        [laboratory guide](https://github.com/schwarzschlyle/immune/blob/main/docs/contributing/vaccine-laboratory.md)
+        first. App-specific rules belong in your own vaccines.
+  - type: input
+    id: id
+    attributes: {label: Proposed id, description: "immune.<domain>.<name>, such as immune.health.dosage_instructions"}
+    validations: {required: true}
+  - type: textarea
+    id: behavior
+    attributes: {label: What it catches, description: The behavior, at which stage (input, data, tool or output).}
+    validations: {required: true}
+  - type: textarea
+    id: who
+    attributes: {label: Who needs it, description: Which kinds of applications, and why it isn't app-specific.}
+    validations: {required: true}
+  - type: textarea
+    id: boundary
+    attributes: {label: What it must leave alone, description: The near misses that must pass.}
+    validations: {required: true}
+  - type: textarea
+    id: examples
+    attributes: {label: Examples, description: "A few synthetic positives and near misses. No real customer data."}
+  - type: textarea
+    id: references
+    attributes: {label: References, description: Incidents, regulations or guidance that motivate it.}

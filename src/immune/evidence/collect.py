@@ -65,11 +65,12 @@ class _RecordingAssessor(Assessor):
         organs: frozenset[str],
         subject: str | None = None,
         site: str | None = None,
+        off: frozenset[str] = frozenset(),
     ) -> list[Assessment]:
         listed = list(findings)
         if not reading.is_empty:
             self._sink.append(_Judgement(stage, reading, frozenset(item.threat for item in listed), organs))
-        return super().judged(stage, reading, listed, organs, subject, site)
+        return super().judged(stage, reading, listed, organs, subject, site, off)
 
     def candidates(
         self,
