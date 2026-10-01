@@ -16,7 +16,7 @@
 <p align="center">
   <a href="https://pypi.org/project/immune-ai/"><img alt="PyPI" src="https://img.shields.io/pypi/v/immune-ai?label=pypi&color=00BBB4"></a>
   <a href="https://pypi.org/project/immune-ai/"><img alt="Python versions" src="https://img.shields.io/badge/python-3.11%20to%203.14-0D141C"></a>
-  <a href="https://github.com/schwarzschlyle/immune/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/schwarzschlyle/immune/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/schwarzschlyle/immune/actions/workflows/ci.yml?query=branch%3Amain"><img alt="CI" src="https://github.com/schwarzschlyle/immune/actions/workflows/ci.yml/badge.svg?branch=main"></a>
   <a href="https://github.com/schwarzschlyle/immune/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-0D141C"></a>
   <a href="#project-status"><img alt="Status" src="https://img.shields.io/badge/status-pre--release-00BBB4"></a>
 </p>
