@@ -846,6 +846,8 @@ immune vaccines list --custom                                      # what is loa
   the tests pass. It always writes `enforcement: observe`.
 
 Start observed. Once its observed hits in real verdicts look right, set `enforcement: enforce` or let promotion do it.
+The [vaccines guide](vaccines.md#build-a-vaccine-for-your-app) puts the whole workflow on one page, from the first
+file to enforcement. All of it ships in the package; your vaccines live in your own repository.
 
 ### 8.6 Sharing vaccines between services
 
