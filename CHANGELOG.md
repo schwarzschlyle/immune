@@ -37,7 +37,7 @@ each one is called out under **Changed** or **Removed**.
 - A new logo and brand across the README, the documentation site (now with light and dark themes) and the user guide.
 - A vaccine that is switched off now costs nothing: its Jev questions are not asked and its detectors don't run.
   Before, switching a vaccine off only stopped it acting.
-- The user guide is published at https://immune-user-guide.vercel.app/, and the package's Documentation link points there.
+- The user guide is published at https://schwarzschlyle.github.io/immune-user-guide/, and the package's Documentation link points there.
 
 ### Fixed
 

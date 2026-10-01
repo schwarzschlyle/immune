@@ -21,7 +21,7 @@ extra_css: [stylesheets/brand.css]
 nav:
   - Home: index.md
   - Quickstart: quickstart.md
-  - User guide: https://immune-user-guide.vercel.app/
+  - User guide: https://schwarzschlyle.github.io/immune-user-guide/
   - Project setup: guides/setup.md
   - Concepts:
       - The biological model: concepts/biology.md
