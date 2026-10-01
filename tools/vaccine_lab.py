@@ -772,7 +772,7 @@ def index(layout: Layout, check_only: bool = False) -> list[str]:
     for path, text in targets.items():
         current = path.read_text(encoding="utf-8") if path.is_file() else None
         if current != text:
-            stale.append(str(path.relative_to(layout.root)))
+            stale.append(path.relative_to(layout.root).as_posix())
             if not check_only:
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_text(text, encoding="utf-8")
@@ -930,7 +930,7 @@ def _run(args: argparse.Namespace, layout: Layout) -> int:
         stage = Stage(args.stage or ("tool" if args.kind == "tool" else "output"))
         title = args.title or args.id.rsplit(".", 1)[-1].replace("_", " ").capitalize()
         for path in new(layout, args.id, args.kind, stage, title, args.owner):
-            print(f"wrote {path.relative_to(layout.root)}")
+            print(f"wrote {path.relative_to(layout.root).as_posix()}")
         print("next: write the detector and tests, add evidence rows, then record, fit, measure and index")
         return 0
     if args.command == "index":
