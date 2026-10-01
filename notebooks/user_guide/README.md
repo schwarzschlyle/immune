@@ -166,6 +166,15 @@ A few more conventions:
   - Test, trial and generate vaccines
   - Switch built-in protections off or on
   - Vaccines that ship with Immune
+- **[Designing and testing your own vaccines](12b_designing_vaccines.ipynb)**
+  - Name the rule
+  - Decide where to look
+  - Choose how to recognize it
+  - Write examples that should and shouldn't fire
+  - Test the examples
+  - Trial it on everyday traffic
+  - Test it inside your app's test suite
+  - Ship it observed, then enforce it
 
 ### Testing and operations
 
