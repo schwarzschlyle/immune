@@ -17,6 +17,10 @@ anything else. The exceptions are `release/*` branches, which carry the changelo
 `hotfix/*` branches, which may target `staging` or `main`. After each release, the workflow opens pull requests
 that bring `staging` and `dev` back in sync with `main`.
 
+`dev` is the repository's default branch, so pull requests (including Renovate's) target it automatically and
+scheduled workflows run against it. The Scorecard workflow must run on the default branch, so its trigger names `dev`;
+change it there if the default branch ever changes. The README's CI badge shows `main`, the released code.
+
 Merge promotion pull requests (`dev` → `staging`, `staging` → `main` and the back-merges) with **Create a merge
 commit**, never squash or rebase. The three branches then share one history: release tags on `main` are reachable
 from `dev` and `staging`, and the back-merges stay trivial. Feature pull requests into `dev` may be squashed.
