@@ -1,0 +1,45 @@
+{
+  "cost": {
+    "questions": 1
+  },
+  "detector": "questions",
+  "evidence": {
+    "hard_negatives": 30,
+    "positives": 30,
+    "sources": 1,
+    "test_hard_negatives": 15,
+    "test_positives": 15
+  },
+  "false_alarms": [],
+  "id": "immune.health.dosage_instructions",
+  "inputs": {
+    "cassette": "5a004897c1f05f02",
+    "evidence": "b5680d9c5284a006",
+    "self": "9013dba3ad8e9359",
+    "source": "fe89ccc652a7f122"
+  },
+  "maturity": "experimental",
+  "metrics": {
+    "ece": 0.0092,
+    "hard_negative_fpr": 0.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "self_rate": 0.0
+  },
+  "misses": [],
+  "recording": {
+    "date": "2026-10-01",
+    "input_tokens": 102781,
+    "model": "jev-1.13.0",
+    "requests": 292,
+    "unanswered": 0
+  },
+  "self": {
+    "samples": 230
+  },
+  "stage": "output",
+  "threshold": 0.73,
+  "title": "The reply tells the user how much of a medicine to take",
+  "unanswered": 0,
+  "version": "1.0.0"
+}

@@ -7,12 +7,41 @@ each one is called out under **Changed** or **Removed**.
 
 ## [Unreleased]
 
+### Added
+
+- **The vaccine library:** vaccines that ship with Immune for problems many applications share. Each is off until
+  `vaccines.enabled` (globally, per site, or live with `immune.configure()`) names it, starts observed, and has an id
+  in the reserved `immune.` namespace. `vaccines.library: false` leaves the library out.
+- `immune vaccines list --library`, `immune vaccines show <id>` (a vaccine's measured card) and
+  `immune vaccines fork <id> --as <your.id>` (copy a library vaccine to tailor it).
+- **The vaccine laboratory** for contributors: `tools/vaccine_lab.py` (`new`, `record`, `fit`, `measure`, `index`,
+  `check`, `drift`), licensed evidence, recorded Jev answers replayed offline in CI, measured cards, and maturity
+  gates (`experimental`, `stable`, `deprecated`). The guide is `docs/contributing/vaccine-laboratory.md`.
+- A `laboratory` CI job, a weekly live drift check, and a vaccine proposal issue form.
+
+### Vaccines
+
+- `immune.health.dosage_instructions` 1.0.0 (experimental): the reply tells the user how much of a medicine to take.
+- `immune.health.diagnosis` 1.0.0 (experimental): the reply tells the user which condition they have.
+- `immune.finance.personal_investment_advice` 1.0.0 (experimental): the reply recommends investments for the user.
+- `immune.legal.case_specific_advice` 1.0.0 (experimental): the reply tells the user what to do in their own legal
+  matter.
+- `immune.civic.political_persuasion` 1.0.0 (experimental): the reply urges the user to back a party, candidate or
+  measure.
+- `immune.brand.profanity` 1.0.0 (experimental): the reply uses profanity (Jev confirms each match).
+
 ### Changed
+
+- A vaccine that is switched off now costs nothing: its Jev questions are not asked and its detectors don't run.
+  Before, switching a vaccine off only stopped it acting.
 
 - The user guide is published at https://immune-user-guide.vercel.app/, and the package's Documentation link points there.
 
 ### Fixed
 
+- A vaccine that was switched off was still counted as checked on every call, so switching it on later could promote it
+  to enforcement at once on a record it never earned. Switched-off vaccines now build no promotion record.
+- An output vaccine that was switched off but listed in a site's `enforce` no longer stops progressive streaming.
 - The Redis state backend no longer fails an update with "could not update ... after 20 attempts" when several
   workers write the same key at once; it now waits a short, random, growing moment between retries.
 

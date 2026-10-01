@@ -50,6 +50,7 @@ from immune.telemetry.stats import PromotionLedger
 from immune.telemetry.verdicts import VerdictIndex, VerdictRecorder
 from immune.types import SiteStatus
 from immune.vaccines import Switchboard, VaccineLoader
+from immune.vaccines.switchboard import Activation, warn_deprecated
 
 _LOGGER = logging.getLogger("immune")
 _UNLIMITED = 1_000_000
@@ -180,6 +181,7 @@ class Runtime:
             observers=self.observers,
             transcripts=TranscriptCache(self.backend, reflexes.redactor.mask, limits.session_ttl_s),
             vaccines=self.vaccines.reflexes(),
+            activation=self._activation(settings),
         )
         self.pipeline = CallPipeline(self.parts)
         self.dispatch = SensingDispatch(self.pipeline, self.loop, self.sensor, settings.sensor.budget_s)
@@ -212,6 +214,8 @@ class Runtime:
         changed = [name for name in fixed if getattr(settings, name) != getattr(self.settings, name)]
         if settings.vaccines.paths != self.settings.vaccines.paths:
             changed.append("vaccines.paths")
+        if settings.vaccines.library != self.settings.vaccines.library:
+            changed.append("vaccines.library")
         if changed:
             raise ConfigError(f"{', '.join(changed)} cannot change at runtime; call immune.init() again")
         Switchboard.validate(settings, self.spec)
@@ -222,6 +226,7 @@ class Runtime:
             settings=settings,
             decider=Decider(policy),
             recorder=VerdictRecorder(settings.privacy.log, settings.privacy.verdict_log),
+            activation=self._activation(settings),
         )
         self.pipeline.reconfigure(self.parts)
         self.flow.reconfigure(
@@ -231,8 +236,21 @@ class Runtime:
         )
 
     def _policy(self, settings: Settings) -> EnforcementPolicy:
-        switchboard = Switchboard(settings.vaccines, self.vaccines.default_off())
-        return EnforcementPolicy(settings.mode, self.ledger, switchboard, self.vaccines.enforced())
+        return EnforcementPolicy(
+            settings.mode,
+            self.ledger,
+            self._switchboard(settings),
+            self.vaccines.enforced(),
+            unpromoted=self.vaccines.experimental(),
+        )
+
+    def _switchboard(self, settings: Settings) -> Switchboard:
+        return Switchboard(settings.vaccines, self.vaccines.default_off())
+
+    def _activation(self, settings: Settings) -> Activation:
+        activation = Activation(self._switchboard(settings), self.vaccines.ids)
+        warn_deprecated(self.vaccines.deprecated(), activation.anywhere(settings))
+        return activation
 
     def _trained(self, spec: Spec, settings: Settings) -> Spec:
         self.artifact_calibrators: dict[str, Calibrator] = {}

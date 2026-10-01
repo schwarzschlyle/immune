@@ -95,6 +95,7 @@ class PreparedCall:
     outbound_plan: SensingPlan | None = None
     outbound_candidates_failed: bool = False
     warnings: list[str] = field(default_factory=list)
+    vaccines_off: frozenset[str] = frozenset()
 
     @property
     def profile(self) -> SiteProfile:

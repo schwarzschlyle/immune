@@ -1,0 +1,4 @@
+# The laboratory records file digests in its cards, so these files keep LF line endings on every platform.
+laboratory/** text eol=lf
+src/immune/vaccines/library/** text eol=lf
+docs/reference/vaccine-catalog.md text eol=lf

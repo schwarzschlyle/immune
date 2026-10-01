@@ -3,8 +3,9 @@ from __future__ import annotations
 import re
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
+from immune.errors import ConfigError
 from immune.types import Action, Sink, Stage
 
 _ID = re.compile(r"^[a-z][a-z0-9_-]*(?:\.[a-z0-9_-]+)+$")
@@ -12,6 +13,7 @@ _KEY = re.compile(r"^[a-z][a-z0-9_]{0,40}$")
 _VERSION = re.compile(r"^\d+\.\d+\.\d+$")
 _INVARIANT = re.compile(r"^U\d{1,2}$")
 _PYTHON = re.compile(r"^[A-Za-z_][\w.]*:[A-Za-z_]\w*$")
+LIBRARY_PREFIX = "immune."
 _PLACEHOLDERS = {Stage.DATA: "item", Stage.TOOL: "call"}
 _ALLOWED: dict[Sink, frozenset[Action]] = {
     Sink.TEXT: frozenset(
@@ -34,6 +36,21 @@ _SINKS_BY_STAGE: dict[Stage, frozenset[Sink]] = {
     Stage.OUTPUT: frozenset({Sink.TEXT, Sink.SOFTWARE}),
 }
 DetectorKind = Literal["pattern", "questions", "tool", "python"]
+Maturity = Literal["experimental", "stable", "deprecated"]
+
+
+class VaccineError(ConfigError):
+    pass
+
+
+def describe(error: ValidationError) -> str:
+    """A validation error as `field: problem` pairs, for messages that name the field and the fix."""
+    problems = []
+    for issue in error.errors():
+        location = ".".join(str(part) for part in issue["loc"]) or "file"
+        message = str(issue["msg"]).removeprefix("Value error, ")
+        problems.append(f"{location}: {message}")
+    return "; ".join(problems)
 
 
 class _Model(BaseModel):
@@ -192,6 +209,8 @@ class Vaccine(_Model):
     frameworks: tuple[str, ...] = ()
     tests: VaccineTests = Field(default_factory=VaccineTests)
     provenance: dict[str, str] = Field(default_factory=dict)
+    maturity: Maturity | None = None
+    related: tuple[str, ...] = ()
 
     @field_validator("id")
     @classmethod
@@ -250,6 +269,11 @@ class Vaccine(_Model):
                 raise ValueError("tests for a tool vaccine are tool calls such as {tool: refund_order, arguments: {}}")
         elif any(isinstance(example, ToolExample) for example in examples):
             raise ValueError(f"tests for a {self.stage.value} vaccine are text; tool calls only apply to stage: tool")
+
+    @property
+    def library(self) -> bool:
+        """Whether the id is in the namespace reserved for the vaccine library that ships with Immune."""
+        return self.id.startswith(LIBRARY_PREFIX)
 
     @property
     def slug(self) -> str:

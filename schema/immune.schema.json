@@ -629,6 +629,19 @@
           "default": false,
           "title": "Allow Floor Changes",
           "type": "boolean"
+        },
+        "library": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "format": "path",
+              "type": "string"
+            }
+          ],
+          "default": true,
+          "title": "Library"
         }
       },
       "title": "VaccineSettings",
