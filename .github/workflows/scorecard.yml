@@ -1,8 +1,11 @@
 name: scorecard
 
+# Scorecard only runs on the repository's default branch, which is dev (Settings > General > Default branch).
+# If the default branch changes, change the branch below to match.
 on:
   push:
-    branches: [main]
+    branches: [dev]
+  branch_protection_rule:
   schedule:
     - cron: "29 4 * * 2"
 

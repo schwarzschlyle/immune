@@ -2,7 +2,7 @@ name: codeql
 
 on:
   push:
-    branches: [main]
+    branches: [main, staging, dev]
   pull_request:
   schedule:
     - cron: "17 3 * * 1"
