@@ -1,0 +1,45 @@
+{
+  "cost": {
+    "questions": 1
+  },
+  "detector": "questions",
+  "evidence": {
+    "hard_negatives": 30,
+    "positives": 30,
+    "sources": 1,
+    "test_hard_negatives": 15,
+    "test_positives": 15
+  },
+  "false_alarms": [],
+  "id": "immune.health.diagnosis",
+  "inputs": {
+    "cassette": "8cb627815f2d6a83",
+    "evidence": "95cad13424a568e7",
+    "self": "9013dba3ad8e9359",
+    "source": "0f629abcc34f6916"
+  },
+  "maturity": "experimental",
+  "metrics": {
+    "ece": 0.0107,
+    "hard_negative_fpr": 0.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "self_rate": 0.0
+  },
+  "misses": [],
+  "recording": {
+    "date": "2026-10-01",
+    "input_tokens": 101510,
+    "model": "jev-1.13.0",
+    "requests": 292,
+    "unanswered": 0
+  },
+  "self": {
+    "samples": 230
+  },
+  "stage": "output",
+  "threshold": 0.73,
+  "title": "The reply tells the user which condition they have",
+  "unanswered": 0,
+  "version": "1.0.0"
+}

@@ -62,6 +62,7 @@ from immune.telemetry.throttle import ThrottledLog
 from immune.telemetry.verdicts import VerdictIndex, VerdictRecorder
 from immune.types import Action, Hit, Mode, SensorInfo, Sink, Stage, Taint, Verdict
 from immune.vaccines import VaccineReflexes
+from immune.vaccines.switchboard import Activation
 
 _LOGGER = logging.getLogger("immune")
 _THROTTLED = ThrottledLog(_LOGGER)
@@ -120,6 +121,7 @@ class PipelineParts:
     observers: Observers
     transcripts: TranscriptCache
     vaccines: VaccineReflexes = field(default_factory=VaccineReflexes)
+    activation: Activation = field(default_factory=Activation)
 
 
 class CallPipeline:
@@ -152,6 +154,7 @@ class CallPipeline:
         edits, cleaned, sanitation = self._sanitize(parsed)
         conversation = self._parts.segmenter.split(parsed.with_segments(cleaned))
         site, settings = self._site(conversation)
+        off = self._parts.activation.off(settings)
         trace_id = uuid.uuid4().hex[:16]
         identity = self._parts.resolver.resolve(conversation, trace_id, codec.server_side_history)
         session = self._session(identity)
@@ -166,8 +169,8 @@ class CallPipeline:
         canary = self._parts.canary
         if canary is not None and not context.signed and codec.append_operator_note(document, canary.note):
             request_changed = True
-        user_view, user_findings = self._user(conversation, sanitation, site)
-        data_items = self._items(conversation, sanitation, site)
+        user_view, user_findings = self._user(conversation, sanitation, site, off)
+        data_items = self._items(conversation, sanitation, site, off)
         tool_findings = tuple(self._parts.organs.inspect_request(site.site_id, conversation, site.profile))
         numbering = CandidateNumbers()
         digest = self._input_digest(conversation)
@@ -194,6 +197,7 @@ class CallPipeline:
             candidates=self._inbound_candidates(conversation, user_findings, data_items, tool_findings, numbering),
             sanitation={edit.locator: edit for edit in edits},
             numbering=numbering,
+            vaccines_off=off,
         )
 
     def request_body(self, prepared: PreparedCall) -> bytes | None:
@@ -477,7 +481,10 @@ class CallPipeline:
         return not any(
             self._parts.decider.policy.could_enforce(threat, prepared.site.site_id, site)
             for threat in self._parts.spec.threats_for(Stage.OUTPUT)
-            if threat.floor is None and threat.id not in _SPAN_THREATS and _replaces(threat, prepared.profile.sink)
+            if threat.floor is None
+            and threat.id not in _SPAN_THREATS
+            and threat.id not in prepared.vaccines_off
+            and _replaces(threat, prepared.profile.sink)
         )
 
     def stream_hold(self, prepared: PreparedCall, text: str) -> int | None:
@@ -632,7 +639,15 @@ class CallPipeline:
         return [
             *assessor.deterministic(self._nominator.deterministic(findings), subject=subject),
             *decided,
-            *assessor.judged(stage, reading, evidence, prepared.profile.organs, subject, prepared.site.site_id),
+            *assessor.judged(
+                stage,
+                reading,
+                evidence,
+                prepared.profile.organs,
+                subject,
+                prepared.site.site_id,
+                prepared.vaccines_off,
+            ),
         ]
 
     @staticmethod
@@ -721,7 +736,9 @@ class CallPipeline:
     @staticmethod
     def _facts(prepared: PreparedCall) -> PanelFacts:
         facts = replace(
-            prepared.profile.facts(prepared.conversation, prepared.session.minor), site=prepared.site.site_id
+            prepared.profile.facts(prepared.conversation, prepared.session.minor),
+            site=prepared.site.site_id,
+            off=prepared.vaccines_off,
         )
         if prepared.site.profiled or prepared.profile.sink is not Sink.TEXT:
             return facts
@@ -784,7 +801,7 @@ class CallPipeline:
         return findings, hidden
 
     def _user(
-        self, conversation: Conversation, sanitation: dict[Locator, list[Finding]], site: Site
+        self, conversation: Conversation, sanitation: dict[Locator, list[Finding]], site: Site, off: frozenset[str]
     ) -> tuple[ViewedText | None, tuple[Finding, ...]]:
         latest = conversation.latest_user
         if latest is None:
@@ -792,7 +809,7 @@ class CallPipeline:
         findings, decoded = self._memo.inbound(latest.text)
         findings = (
             *findings,
-            *self._parts.vaccines.text_findings(Stage.INPUT, latest.text, site.site_id, site.profile.organs),
+            *self._parts.vaccines.text_findings(Stage.INPUT, latest.text, site.site_id, site.profile.organs, off),
         )
         prior = sanitation.get(latest.locator, [])
         hidden = "\n".join([decoded, *(finding.payload for finding in prior if finding.payload)]).strip()
@@ -801,14 +818,14 @@ class CallPipeline:
         return view, (*prior, *findings)
 
     def _items(
-        self, conversation: Conversation, sanitation: dict[Locator, list[Finding]], site: Site
+        self, conversation: Conversation, sanitation: dict[Locator, list[Finding]], site: Site, off: frozenset[str]
     ) -> tuple[DataItem, ...]:
         items: list[DataItem] = []
         for index, segment in enumerate(conversation.current_data):
             findings, decoded = self._memo.inbound(segment.text)
             findings = (
                 *findings,
-                *self._parts.vaccines.text_findings(Stage.DATA, segment.text, site.site_id, site.profile.organs),
+                *self._parts.vaccines.text_findings(Stage.DATA, segment.text, site.site_id, site.profile.organs, off),
             )
             prior = [] if segment.is_embedded else sanitation.get(segment.locator, [])
             hidden = "\n".join([decoded, *(finding.payload for finding in prior if finding.payload)]).strip()
@@ -939,7 +956,9 @@ class CallPipeline:
         findings.extend(reflexes.prompt_copy.findings(text, conversation.operator_text))
         findings.extend(parts.organs.inspect_reply(conversation, Reply(text=text), prepared.profile))
         findings.extend(
-            parts.vaccines.text_findings(Stage.OUTPUT, text, prepared.site.site_id, prepared.profile.organs)
+            parts.vaccines.text_findings(
+                Stage.OUTPUT, text, prepared.site.site_id, prepared.profile.organs, prepared.vaccines_off
+            )
         )
         return findings
 
@@ -995,7 +1014,11 @@ class CallPipeline:
         findings.extend(
             Finding(finding.threat, finding.evidence, finding.span, finding.payload, call_id)
             for finding in parts.vaccines.call_findings(
-                call, prepared.site.site_id, prepared.profile.organs, session.taint is not Taint.CLEAN
+                call,
+                prepared.site.site_id,
+                prepared.profile.organs,
+                session.taint is not Taint.CLEAN,
+                prepared.vaccines_off,
             )
         )
         return findings
@@ -1144,16 +1167,16 @@ class CallPipeline:
         response_id: str | None,
     ) -> None:
         parts = self._parts
-        organs = prepared.profile.organs
+        organs, off = prepared.profile.organs, prepared.vaccines_off
         evaluated: list[str] = []
         if not inbound.input_reading.is_empty or prepared.user_findings:
-            evaluated.extend(parts.assessor.evaluated_threats(Stage.INPUT, organs))
+            evaluated.extend(parts.assessor.evaluated_threats(Stage.INPUT, organs, off))
         if prepared.data_items:
-            evaluated.extend(parts.assessor.evaluated_threats(Stage.DATA, organs))
+            evaluated.extend(parts.assessor.evaluated_threats(Stage.DATA, organs, off))
         if parsed is not None and parsed.reply.text:
-            evaluated.extend(parts.assessor.evaluated_threats(Stage.OUTPUT, organs))
+            evaluated.extend(parts.assessor.evaluated_threats(Stage.OUTPUT, organs, off))
         if parsed is not None and parsed.calls:
-            evaluated.extend(parts.assessor.evaluated_threats(Stage.TOOL, organs))
+            evaluated.extend(parts.assessor.evaluated_threats(Stage.TOOL, organs, off))
         if not prepared.identity.anonymous:
             parts.sessions.save(prepared.session)
         parts.ledger.observe(prepared.site.site_id, evaluated, {decision.hit.threat for decision in decisions})

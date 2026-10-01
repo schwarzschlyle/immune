@@ -4,6 +4,7 @@ import argparse
 import json
 import re
 import tempfile
+import textwrap
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
@@ -20,7 +21,7 @@ from immune.config.yaml_io import load_yaml
 from immune.errors import ConfigError
 from immune.sensing.sensor import Sensor
 from immune.types import Stage
-from immune.vaccines import LoadedVaccine, Switchboard, VaccineBundle, VaccineError, VaccineLoader
+from immune.vaccines import LibraryCatalog, LoadedVaccine, Switchboard, VaccineBundle, VaccineError, VaccineLoader
 from immune.vaccines.lab import (
     Probe,
     ProbeResult,
@@ -31,6 +32,7 @@ from immune.vaccines.lab import (
     VaccineReport,
 )
 from immune.vaccines.model import Vaccine
+from immune.vaccines.switchboard import Activation
 
 KINDS = ("keywords", "regex", "questions", "tool", "python")
 _STAGES = [stage.value for stage in Stage if stage is not Stage.OPERATOR]
@@ -61,9 +63,24 @@ class VaccinesCommand(Command):
 
         listing = actions.add_parser("list", help="every built-in threat and vaccine, and whether it is on")
         listing.add_argument("--site", help="show the state at this site")
-        listing.add_argument("--custom", action="store_true", help="only vaccines")
+        listing.add_argument("--custom", action="store_true", help="only your own vaccines")
+        listing.add_argument("--library", action="store_true", help="only the vaccine library that ships with Immune")
         listing.add_argument("--off", action="store_true", help="only protections that are off")
         _config_argument(listing)
+
+        show = actions.add_parser("show", help="a vaccine's card: what it catches, its numbers, how to switch it on")
+        show.add_argument("vaccine", help="a vaccine id, such as immune.health.dosage_instructions")
+        show.add_argument("--site", help="show the state at this site")
+        _config_argument(show)
+
+        fork = actions.add_parser("fork", help="copy a library vaccine into your own vaccines to tailor it")
+        fork.add_argument("vaccine", help="a library vaccine id, such as immune.health.dosage_instructions")
+        fork.add_argument("--as", dest="new_id", required=True, help="your id, such as acme.dosage_instructions")
+        fork.add_argument(
+            "--dir", type=Path, default=Path("vaccines"), help="directory to write to (default: vaccines)"
+        )
+        fork.add_argument("--force", action="store_true", help="overwrite an existing file")
+        _config_argument(fork)
 
         test = actions.add_parser("test", help="run each vaccine's positive and negative examples")
         test.add_argument("paths", nargs="*", type=Path, help="vaccine files or directories (default: vaccines.paths)")
@@ -85,6 +102,10 @@ class VaccinesCommand(Command):
             return self._new(args, console)
         if args.action == "list":
             return self._list(args, console)
+        if args.action == "show":
+            return self._show(args, console)
+        if args.action == "fork":
+            return self._fork(args, console)
         if args.action == "test":
             return self._test(args, console)
         return self._trial(args, console)
@@ -118,12 +139,16 @@ class VaccinesCommand(Command):
         rows = []
         for threat in spec.threats.values():
             loaded = bundle.get(threat.id)
-            if args.custom and loaded is None:
+            library = loaded is not None and loaded.library
+            if (args.custom and (loaded is None or library)) or (args.library and not library):
                 continue
             off, why = switchboard.explain(threat.id, site, f"sites.{args.site}")
             if args.off and not off:
                 continue
-            source = f"vaccine {loaded.vaccine.version}" if loaded is not None else "built-in"
+            source = "built-in"
+            if loaded is not None:
+                vaccine = loaded.vaccine
+                source = f"library {vaccine.version}, {vaccine.maturity}" if library else f"vaccine {vaccine.version}"
             floor = threat.floor.id if threat.floor is not None else ""
             rows.append((threat.id, source, threat.stage.value, threat.detector, floor, "off" if off else "on", why))
         console.table(("protection", "source", "stage", "detector", "floor", "state", "why"), rows)
@@ -138,21 +163,122 @@ class VaccinesCommand(Command):
             console.line(f"\nfloor protections switched off ({allowed} vaccines.allow_floor_changes):")
             for removal in removals:
                 console.line(f"  {removal}")
-        console.line(f"\n{len(rows)} protections, {len(bundle.vaccines)} vaccines loaded")
+        library_ids = [item.vaccine.id for item in bundle.vaccines if item.library]
+        switched_on = Activation(switchboard, library_ids).anywhere(settings)
+        custom = len(bundle.vaccines) - len(library_ids)
+        console.line(
+            f"\n{len(rows)} protections, {custom} vaccines loaded, {len(library_ids)} library vaccines available "
+            f"({len(switched_on)} switched on)"
+        )
+        if args.library:
+            console.line("`immune vaccines show <id>` prints a vaccine's card and how to switch it on")
+        return 0
+
+    @staticmethod
+    def _show(args: argparse.Namespace, console: Console) -> int:
+        settings = SettingsLoader().load(args.config)
+        bundle = VaccineLoader(settings.vaccines).load()
+        loaded = bundle.get(args.vaccine)
+        if loaded is None:
+            raise VaccineError(f"no vaccine {args.vaccine!r}; `immune vaccines list --library` lists the library")
+        vaccine = loaded.vaccine
+        entry = LibraryCatalog.open(settings.vaccines.library).get(vaccine.id) if loaded.library else None
+        card: dict[str, Any] = dict(entry.card) if entry is not None else {}
+        kind = (
+            f"library vaccine {vaccine.version}, {vaccine.maturity}" if loaded.library else f"vaccine {vaccine.version}"
+        )
+        console.heading(f"{vaccine.id} ({kind})")
+        console.line(vaccine.title)
+        if vaccine.description:
+            console.line()
+            for line in textwrap.wrap(vaccine.description, 100):
+                console.line(line)
+        site = settings.site(args.site) if args.site else None
+        off, why = Switchboard(settings.vaccines, bundle.default_off()).explain(vaccine.id, site, f"sites.{args.site}")
+        detect = vaccine.detect
+        detector = detect.kind + (" (Jev confirms each match)" if detect.confirm == "jev" else "")
+        scope = ", ".join([*vaccine.applies_to.sites, *vaccine.applies_to.organs]) or "every site"
+        actions = ", ".join(
+            f"{sink.value}: {action.value}" for sink, action in vaccine.respond.actions(vaccine.stage).items()
+        )
+        rows: list[tuple[str, str]] = [
+            ("stage", vaccine.stage.value),
+            ("detector", detector),
+            ("responds", actions + (f' ("{vaccine.respond.message}")' if vaccine.respond.message else "")),
+            ("applies to", scope),
+            ("state", f"{'off' if off else 'on'}: {why}"),
+            (
+                "enforcement",
+                vaccine.enforcement + (", never promoted automatically" if vaccine.maturity == "experimental" else ""),
+            ),
+        ]
+        rows += _card_rows(card)
+        console.line()
+        console.table(("about", "value"), rows)
+        examples = [("fires on", vaccine.tests.positives), ("passes", vaccine.tests.negatives)]
+        for label, items in examples:
+            for item in items:
+                console.line(f"{label}: {Probe.of(item).label}")
+        if off:
+            console.line("\nswitch it on (globally, or under sites.<site>.vaccines):")
+            console.line("  vaccines:")
+            console.line(f"    enabled: [{vaccine.id}]")
+        return 0
+
+    @staticmethod
+    def _fork(args: argparse.Namespace, console: Console) -> int:
+        settings = SettingsLoader().load(args.config)
+        entry = LibraryCatalog.open(settings.vaccines.library).get(args.vaccine)
+        if entry is None:
+            raise VaccineError(
+                f"{args.vaccine!r} is not in the vaccine library; `immune vaccines list --library` lists it"
+            )
+        original = entry.vaccine
+        document = original.model_dump(mode="json", exclude_defaults=True)
+        for field in ("maturity", "related"):
+            document.pop(field, None)
+        document.update(
+            id=args.new_id,
+            default="on",
+            enforcement="observe",
+            provenance={"forked_from": f"{original.id}@{original.version}"},
+        )
+        fork = Vaccine.model_validate(document)
+        if fork.library:
+            raise VaccineError("the immune. namespace is reserved for the library; fork into your own, such as acme.*")
+        path = args.dir / f"{fork.id}.yaml"
+        if path.exists() and not args.force:
+            raise ConfigError(f"{path} already exists; pass --force to overwrite it")
+        header = (
+            f"# Forked from {original.id} {original.version} on {datetime.now(UTC):%Y-%m-%d}. Tailor it to your app.\n"
+        )
+        args.dir.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            header + yaml.safe_dump(document, sort_keys=False, allow_unicode=True, width=120), encoding="utf-8"
+        )
+        console.line(f"wrote {path} (enforcement: observe)")
+        console.line("next: edit it, then run")
+        console.line(f"  immune vaccines test {path}")
+        console.line(f"  immune vaccines trial {path} --live")
+        console.line(
+            f"and add {args.dir}/ to vaccines.paths. The library's {original.id} stays off unless you enable it."
+        )
         return 0
 
     @staticmethod
     def _test(args: argparse.Namespace, console: Console) -> int:
         settings = SettingsLoader().load(args.config)
         if args.paths:
-            bundle = VaccineLoader(VaccineSettings(paths=tuple(args.paths), entry_points=False)).load()
+            loader = VaccineLoader(VaccineSettings(paths=tuple(args.paths), entry_points=False, library=False))
+            vaccines = [loader.load_file(path) for path in loader.files()]
         else:
-            bundle = VaccineLoader(settings.vaccines).load()
-        if not bundle.vaccines:
+            # The library's vaccines are measured in Immune's laboratory against recorded Jev answers.
+            vaccines = [item for item in VaccineLoader(settings.vaccines).load().vaccines if not item.library]
+        if not vaccines:
             console.line("no vaccines found: pass a path or set vaccines.paths in immune.yaml")
             return 1
         lab = VaccineLab(live=_live(settings) if args.live else None, site=args.site)
-        reports = [lab.test(loaded) for loaded in bundle.vaccines]
+        reports = [lab.test(loaded) for loaded in vaccines]
         rows = [row for report in reports for row in _report_rows(report)]
         console.table(("vaccine", "expect", "example", "result", "detail"), rows)
         for report in reports:
@@ -430,6 +556,27 @@ def _samples(vaccine: Vaccine, corpus: Sequence[Path], include_self: bool) -> tu
         probes += loaded
         sources.append(f"{len(loaded)} from {path}")
     return probes, sources
+
+
+def _card_rows(card: dict[str, Any]) -> list[tuple[str, str]]:
+    """A library vaccine's measured numbers, from its card in the library bundle."""
+    if not card:
+        return []
+    metrics, evidence = card.get("metrics", {}), card.get("evidence", {})
+
+    def percent(value: float | None) -> str:
+        return "n/a" if value is None else f"{value:.1%}"
+
+    rows = [
+        ("recall", f"{percent(metrics.get('recall'))} of positives caught"),
+        ("near misses caught", percent(metrics.get("hard_negative_fpr"))),
+        ("everyday traffic caught", f"{percent(metrics.get('self_rate'))} of {card.get('self_samples', '?')} samples"),
+        ("evidence", f"{evidence.get('positives', 0)} positives, {evidence.get('hard_negatives', 0)} near misses"),
+        ("Jev questions", str(card.get("questions", 0))),
+    ]
+    if card.get("recorded"):
+        rows.append(("measured", f"Jev answers recorded {card['recorded']} with {card.get('jev_model')}"))
+    return rows
 
 
 def _report_rows(report: VaccineReport) -> list[tuple[str, str, str, str, str]]:

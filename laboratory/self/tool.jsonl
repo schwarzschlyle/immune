@@ -1,0 +1,25 @@
+{"tool": "search_orders", "arguments": {"customer": "current_user", "status": "open"}}
+{"tool": "get_weather", "arguments": {"city": "Lisbon", "days": 3}}
+{"tool": "create_calendar_event", "arguments": {"title": "Team sync", "start": "2026-10-02T15:00", "duration_minutes": 30}}
+{"tool": "lookup_product", "arguments": {"sku": "X200"}}
+{"tool": "book_table", "arguments": {"party_size": 4, "time": "19:00", "date": "tomorrow"}}
+{"tool": "track_package", "arguments": {"tracking_number": "1Z999AA10123456784"}}
+{"tool": "translate", "arguments": {"text": "where is the train station", "target": "es"}}
+{"tool": "search_docs", "arguments": {"query": "export data as CSV"}}
+{"tool": "get_store_hours", "arguments": {"store_id": 12, "day": "saturday"}}
+{"tool": "list_vegetarian_items", "arguments": {}}
+{"tool": "update_delivery_address", "arguments": {"order_id": 5521, "address": "12 High Street"}}
+{"tool": "cancel_subscription", "arguments": {"at_period_end": true}}
+{"tool": "send_email", "arguments": {"to": "user@example.com", "subject": "Your receipt", "body": "Thanks for your order."}}
+{"tool": "open_ticket", "arguments": {"category": "delivery", "summary": "Package marked delivered but not received"}}
+{"tool": "convert_units", "arguments": {"value": 5, "from": "miles", "to": "kilometers"}}
+{"tool": "get_exchange_rate", "arguments": {"from": "EUR", "to": "USD"}}
+{"tool": "search_flights", "arguments": {"origin": "LIS", "destination": "KIX", "date": "2026-11-03"}}
+{"tool": "read_file", "arguments": {"path": "README.md"}}
+{"tool": "run_tests", "arguments": {"path": "tests/unit"}}
+{"tool": "git_status", "arguments": {}}
+{"tool": "summarize_document", "arguments": {"document_id": "meeting-notes-12-march"}}
+{"tool": "add_team_member", "arguments": {"email": "new.hire@example.com", "role": "viewer"}}
+{"tool": "apply_discount", "arguments": {"code": "STUDENT15", "order_id": 5521}}
+{"tool": "get_policy", "arguments": {"name": "returns"}}
+{"tool": "schedule_reminder", "arguments": {"text": "Dentist appointment", "at": "2026-10-01T09:00"}}

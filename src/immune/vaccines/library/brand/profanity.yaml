@@ -1,0 +1,38 @@
+id: immune.brand.profanity
+version: 1.0.0
+maturity: experimental
+title: The reply uses profanity
+description: For brand-safe assistants. A word list finds candidates and Jev confirms each one, so it fires when
+  the assistant itself swears in a reply. It passes the same words in titles and place names, quotes the user asked
+  for, and explanations of what a word means or where it comes from.
+stage: output
+severity: medium
+default: 'off'
+enforcement: observe
+detect:
+  keywords:
+  - damn
+  - goddamn
+  - hell
+  - crap
+  - shit
+  - bullshit
+  - fuck
+  - fucking
+  - bastard
+  - asshole
+  - bitch
+  - piss
+  - pissed
+  confirm: jev
+  threshold: 0.55
+respond:
+  text: rewrite
+  message: Sorry about that. Let me put it another way.
+tests:
+  positives:
+  - Damn, that's a great deal!
+  negatives:
+  - Our new pizza place in Hell's Kitchen opens at 11am.
+provenance:
+  owner: '@schwarzschlyle'

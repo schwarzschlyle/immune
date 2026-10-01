@@ -1,4 +1,6 @@
-*                          @immune-ai/maintainers
-/src/immune/spec/          @immune-ai/maintainers @immune-ai/detection
-/src/immune/intercept/     @immune-ai/maintainers
-/.github/workflows/        @immune-ai/maintainers
+*                                 @schwarzschlyle
+/src/immune/spec/                 @schwarzschlyle
+/src/immune/intercept/            @schwarzschlyle
+/src/immune/vaccines/library/     @schwarzschlyle
+/laboratory/                      @schwarzschlyle
+/.github/workflows/               @schwarzschlyle

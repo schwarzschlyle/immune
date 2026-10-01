@@ -233,8 +233,8 @@ the outcome for a site and the setting that decided each one.
 
 | Command | Checks |
 | --- | --- |
-| `immune vaccines test [paths] [--live] [--site]` | Positives fire and negatives don't, through a private runtime. Question vaccines use scripted answers offline (checking the head, stage and site wiring) and Jev with `--live` |
-| `immune vaccines trial <id or file> [--corpus FILE] [--max-rate R] [--live]` | How often the vaccine fires on everyday traffic: packaged samples for its stage plus your corpus. Question vaccines need `--live` |
+| `immune vaccines test [paths] [--live] [--site]` | Positives fire and negatives don't, through a private runtime. Question vaccines use scripted answers offline (checking the head, stage and site wiring) and Jev with `--live`. Without paths it tests your own vaccines; library vaccines are measured in the laboratory |
+| `immune vaccines trial <id or file> [--corpus FILE] [--max-rate R] [--live]` | How often the vaccine fires on everyday traffic: packaged samples for its stage plus your corpus. Works for library ids too. Question vaccines need `--live` |
 
 Corpus files are JSON Lines (a string, `{"text": ...}` or `{"tool": ..., "arguments": {...}}` per line) or plain text
 with one message per line. Masked samples of your own traffic predict false positives best.
@@ -269,6 +269,38 @@ def test_the_competitor_vaccine_rewrites_the_reply(immune_harness):
 ```
 
 In your own suite, point `paths` at your `vaccines/` directory instead of a temporary one.
+
+## The vaccine library
+
+Immune ships vaccines for problems many applications share, written and measured in the project's
+[laboratory](../contributing/vaccine-laboratory.md). The [vaccine catalog](../reference/vaccine-catalog.md) lists them
+with their measured numbers. Every library vaccine:
+
+- **Is off until you switch it on**, with the switches above, globally, per site or live with `immune.configure()`.
+  Upgrading Immune never switches one on.
+- **Costs nothing while off:** no Jev questions, no detector time and no promotion record.
+- **Starts observed.** List it in a site's `enforce` to act on it. `stable` vaccines are also promoted automatically
+  once their firing rate on your own traffic proves low; `experimental` ones never are.
+- **Has an id in the reserved `immune.` namespace,** such as `immune.health.dosage_instructions`. Your own vaccines
+  can't use it.
+
+```yaml
+vaccines:
+  enabled: [immune.finance.personal_investment_advice]   # everywhere
+sites:
+  pharmacy-chat:
+    vaccines: {enabled: [immune.health.*]}                # a whole domain, at one site
+    enforce: [immune.health.dosage_instructions]
+```
+
+| Command | Does |
+| --- | --- |
+| `immune vaccines list --library [--site]` | Every library vaccine, its maturity, and whether it's on |
+| `immune vaccines show <id>` | Its card: what it catches and leaves alone, recall, false-positive rates, cost, and how to switch it on |
+| `immune vaccines fork <id> --as acme.<name>` | Copies it into your `vaccines/` as your own vaccine, to tailor |
+| `immune vaccines trial <id> --corpus FILE --live` | How often it would fire on your traffic, before you switch it on |
+
+`vaccines.library: false` leaves the library out entirely.
 
 ## Sharing vaccines
 

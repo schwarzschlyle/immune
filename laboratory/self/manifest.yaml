@@ -1,0 +1,13 @@
+sources:
+- name: packaged
+  path: ../../src/immune/vaccines/self.yaml
+  origin: Immune's packaged everyday samples (src/immune/vaccines/self.yaml), written for the project
+  license: Apache-2.0
+  permitted_use: Evaluating and training Immune vaccines
+- name: authored
+  path: output.jsonl
+  origin: Everyday assistant replies written for the laboratory, across retail, travel, health and banking logistics,
+    law-firm and civic administration, work, education, home and leisure
+  license: Apache-2.0
+  permitted_use: Evaluating and training Immune vaccines
+  notes: No personal data, secrets or attacks. Grow it with permissively licensed public data.

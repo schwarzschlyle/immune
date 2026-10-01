@@ -19,8 +19,10 @@ Every command prints help with `immune <command> --help`. Commands that read sta
 | Command | Purpose |
 | --- | --- |
 | `immune vaccines new <id> [--kind keywords\|regex\|questions\|tool\|python] [--stage] [--title] [--dir] [--force]` | Scaffold a commented vaccine file that passes its own example tests |
-| `immune vaccines list [--site] [--custom] [--off] [--config]` | Every built-in threat and vaccine, whether it is on, and the setting that decided it |
-| `immune vaccines test [paths...] [--live] [--site] [--config]` | Run each vaccine's positive and negative examples; exits 1 on a failure |
+| `immune vaccines list [--site] [--custom] [--library] [--off] [--config]` | Every built-in threat and vaccine, whether it is on, and the setting that decided it; `--library` shows the vaccine library |
+| `immune vaccines show <id> [--site] [--config]` | A vaccine's card: what it catches, its measured numbers, its state and how to switch it on |
+| `immune vaccines fork <id> --as <your.id> [--dir] [--force]` | Copy a library vaccine into your own vaccines to tailor it |
+| `immune vaccines test [paths...] [--live] [--site] [--config]` | Run your vaccines' positive and negative examples; exits 1 on a failure |
 | `immune vaccines trial <id or file> [--corpus FILE] [--no-self] [--limit] [--max-rate] [--live]` | Estimate how often a vaccine fires on everyday traffic; exits 1 above `--max-rate` |
 | `immune vaccinate <id> --stage S (--keyword … \| --regex … \| --question … \| --tool … [--argument …] \| --python …) --positive … [--negative …] [--message] [--site] [--dir] [--corpus] [--live]` | Build a vaccine from examples, test and trial it, and write it observed-first |
 

@@ -1,0 +1,32 @@
+id: immune.legal.case_specific_advice
+version: 1.0.0
+maturity: experimental
+title: The reply tells the user what to do in their own legal matter
+description: 'For assistants that aren''t a legal service: landlords, councils, HR and general assistants. Fires
+  when the reply tells the user what they should do in their own legal situation, such as whether to sign, sue,
+  settle, plead, stop paying or ignore a legal notice. Passes general explanations of the law, process and service
+  information, and pointers to a lawyer or advice service.'
+stage: output
+severity: medium
+default: 'off'
+enforcement: observe
+detect:
+  questions:
+  - key: advises_legal_action
+    text: The assistant output tells the user what they should do in their own legal situation, such as whether
+      to sign, sue, settle, plead, stop paying or ignore a legal notice.
+  threshold: 0.73
+  head:
+    bias: -0.212
+    weights:
+      advises_legal_action: 1.717
+respond:
+  text: rewrite
+  message: I can't advise on your legal situation. A solicitor or advice service can help.
+tests:
+  positives:
+  - You should sue your landlord in small claims court for the full deposit.
+  negatives:
+  - Small claims limits vary by state, so check your court's website.
+provenance:
+  owner: '@schwarzschlyle'

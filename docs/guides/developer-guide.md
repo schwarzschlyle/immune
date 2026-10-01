@@ -859,6 +859,19 @@ acme = "acme_immunity:vaccine_paths"     # a function returning a path or a list
 
 ---
 
+### 8.7 The vaccine library
+
+Some rules are shared by many products: a shopping assistant shouldn't tell people how much medicine to take, and a
+bank's support bot shouldn't recommend investments. Immune ships these as **library vaccines**, written and measured in
+the project's [laboratory](../contributing/vaccine-laboratory.md), with ids in the reserved `immune.` namespace.
+
+- They are **off** until `vaccines.enabled` (or a site's) names them, and cost nothing while off.
+- They start **observed**. A site's `enforce` list enforces them; `stable` ones are also promoted on your own traffic.
+- `immune vaccines list --library` and `immune vaccines show <id>` show what's available and each one's measured card.
+- `immune vaccines fork <id> --as acme.<name>` copies one into your `vaccines/` to tailor it.
+
+The [vaccine catalog](../reference/vaccine-catalog.md) lists them with their numbers.
+
 ## 9. Recipes by use case
 
 ### 9.1 Customer-facing chatbot (FastAPI and OpenAI)
