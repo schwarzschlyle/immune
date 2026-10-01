@@ -15,6 +15,11 @@ just check          # lint, types, tests with coverage, scenario replay
 No API keys are needed. Tests run against `immune.testing.FakeProvider` (a local stand-in for the OpenAI,
 Anthropic and Gemini wire formats) and `MockSensor` (scripted Jev answers).
 
+If you change a workflow in `.github/workflows/`, lint it with
+[actionlint](https://github.com/rhysd/actionlint): `pipx run --spec actionlint-py actionlint`. It is not part of
+the `dev` extra because installing it downloads a binary from GitHub, which made every CI test job depend on
+GitHub's download servers.
+
 ## How the code is organized
 
 | Package | Responsibility |

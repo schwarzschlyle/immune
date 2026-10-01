@@ -44,6 +44,12 @@ class HangingSensor(Sensor):
         return SensorReading.empty()
 
 
+# Deadline tests prove a call does not wait for a stuck sensor. The sensor stays stuck far longer than the allowed
+# time, which itself leaves room for slow CI runners (Windows under coverage can be 10x slower than a laptop).
+WEDGE_S = 20.0
+ALLOWED_S = 10.0
+
+
 def block_the_current_thread(seconds: float) -> None:
     time.sleep(seconds)
 
@@ -58,7 +64,7 @@ class WedgingSensor(Sensor):
     async def read(self, state: Mapping[str, Any], questions: Sequence[QuestionSpec]) -> SensorReading:
         if not self.wedged:
             self.wedged = True
-            block_the_current_thread(1.5)
+            block_the_current_thread(WEDGE_S)
         return SensorReading.empty(self.name)
 
     def reset(self) -> None:
@@ -126,7 +132,7 @@ class TestDeadlines:
         )
         started = time.perf_counter()
         completion = client.chat.completions.create(model="m", messages=MESSAGES)
-        assert time.perf_counter() - started < 1.0
+        assert time.perf_counter() - started < ALLOWED_S
         assert completion.choices[0].message.content == "Chart [link removed]"
         verdict = immune.verdict(completion)
         assert verdict is not None
@@ -144,7 +150,7 @@ class TestDeadlines:
         )
         started = time.perf_counter()
         client.chat.completions.create(model="m", messages=MESSAGES)
-        assert time.perf_counter() - started < 1.2
+        assert time.perf_counter() - started < ALLOWED_S
         assert runtime.loop.generation == 1
         assert sensor.resets == 1
         client.chat.completions.create(model="m", messages=MESSAGES)
