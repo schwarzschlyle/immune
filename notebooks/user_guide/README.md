@@ -4,7 +4,7 @@ The User Guide covers all of Immune by topic area. Each guide is a Jupyter noteb
 "protecting tool-using agents"), explains how Immune approaches it, and shows it working on real calls, with the
 outputs saved from a live run.
 
-The guide is published as a website at [immune-user-guide.vercel.app](https://immune-user-guide.vercel.app/). The notebooks themselves live in
+The guide is published as a website at [schwarzschlyle.github.io/immune-user-guide](https://schwarzschlyle.github.io/immune-user-guide/). The notebooks themselves live in
 the repository's `notebooks/user_guide` folder, ready to run in Jupyter.
 
 Users brand-new to Immune should start with [10 minutes to Immune](01_ten_minutes_to_immune.ipynb).
@@ -248,5 +248,5 @@ A few more conventions:
   `jupyter nbconvert --to notebook --execute --inplace notebooks/user_guide/*.ipynb`.
   `IMMUNE_RUN_USER_GUIDE=1 pytest tests/docs/test_user_guide.py` executes them without saving.
 - Attacks come only from Immune's incident library, replayed with the recorded model reply.
-- The [website](https://immune-user-guide.vercel.app/) is built from these notebooks in its own repository. After a notebook or this page
+- The [website](https://schwarzschlyle.github.io/immune-user-guide/) is built from these notebooks in its own repository. After a notebook or this page
   changes, run `npm run sync` there and push to publish the update.
