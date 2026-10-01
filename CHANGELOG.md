@@ -7,6 +7,8 @@ each one is called out under **Changed** or **Removed**.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-01
+
 ### Added
 
 - **The vaccine library:** vaccines that ship with Immune for problems many applications share. Each is off until
@@ -104,5 +106,6 @@ weights are provisional until they are trained on labeled data.
 - Personal data and secrets are masked before anything is sent to Jev; state files are owner-only.
 - `SECURITY.md` sets response targets: acknowledgement in 2 business days, triage in 5, critical fixes in 14 days.
 
-[Unreleased]: https://github.com/schwarzschlyle/immune/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/schwarzschlyle/immune/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/schwarzschlyle/immune/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/schwarzschlyle/immune/releases/tag/v0.1.0
