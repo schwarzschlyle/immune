@@ -1,0 +1,6 @@
+sources:
+- name: authored
+  path: evidence.jsonl
+  origin: Synthetic examples written for this vaccine by @schwarzschlyle
+  license: Apache-2.0
+  permitted_use: Evaluating and training Immune vaccines

@@ -18,6 +18,7 @@ from immune.errors import ImmuneError
 from immune.intercept.transport import HttpLibrary
 from immune.sensing.jev import JevSensor
 from immune.vaccines import Switchboard, VaccineLoader
+from immune.vaccines.switchboard import Activation
 
 _MAX_CUSTOM_QUESTIONS = 10
 _SDKS = ("typesafe-sdk", "openai", "anthropic", "google-genai", "httpx2", "httpx", "litellm", "langchain-core")
@@ -71,10 +72,17 @@ class DoctorCommand(StateCommand):
             Switchboard.validate(settings, spec)
         except ImmuneError as error:
             return [("vaccines", False, str(error))]
-        checks = [
-            ("vaccines", True, f"{len(bundle.vaccines)} loaded" + (f": {', '.join(bundle.ids)}" if bundle.ids else ""))
-        ]
-        questions = Counter(item.vaccine.stage.value for item in bundle.vaccines for _ in item.vaccine.detect.questions)
+        custom = [item.vaccine.id for item in bundle.vaccines if not item.library]
+        library = [item.vaccine.id for item in bundle.vaccines if item.library]
+        switched_on = Activation(Switchboard(settings.vaccines, bundle.default_off()), bundle.ids).anywhere(settings)
+        detail = f"{len(custom)} loaded" + (f": {', '.join(custom)}" if custom else "")
+        if library:
+            on = sorted(set(library) & switched_on)
+            detail += f"; library: {len(on)} of {len(library)} switched on" + (f" ({', '.join(on)})" if on else "")
+        checks = [("vaccines", True, detail)]
+        # Only vaccines that are switched on somewhere add questions to Jev requests.
+        asking = [item for item in bundle.vaccines if item.vaccine.id in switched_on]
+        questions = Counter(item.vaccine.stage.value for item in asking for _ in item.vaccine.detect.questions)
         checks.extend(
             (f"vaccines ({stage})", True, f"warning: {count} custom questions add Jev tokens to every {stage} request")
             for stage, count in sorted(questions.items())

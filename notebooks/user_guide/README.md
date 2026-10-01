@@ -165,6 +165,7 @@ A few more conventions:
   - Python functions
   - Test, trial and generate vaccines
   - Switch built-in protections off or on
+  - Vaccines that ship with Immune
 
 ### Testing and operations
 

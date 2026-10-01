@@ -39,6 +39,7 @@ class PanelFacts:
     minor: bool = False
     organs: frozenset[str] = field(default_factory=frozenset)
     site: str | None = None
+    off: frozenset[str] = field(default_factory=frozenset)
 
 
 class Condition(_Frozen):
@@ -77,6 +78,7 @@ class QuestionSpec(_Frozen):
     levels: tuple[str, ...] = ()
     views: bool = False
     when: Condition = Field(default_factory=Condition)
+    owner: str | None = None
 
     def bound(self, key: str, **placeholders: str) -> QuestionSpec:
         return self.model_copy(update={"key": key, "text": self.text.format(**placeholders)})
@@ -87,7 +89,12 @@ class PanelSpec(_Frozen):
     questions: tuple[QuestionSpec, ...]
 
     def applicable(self, facts: PanelFacts) -> tuple[QuestionSpec, ...]:
-        return tuple(question for question in self.questions if question.when.holds(facts))
+        # A vaccine that is switched off costs nothing: its questions are not asked.
+        return tuple(
+            question
+            for question in self.questions
+            if (question.owner is None or question.owner not in facts.off) and question.when.holds(facts)
+        )
 
 
 class FloorSpec(_Frozen):
@@ -207,6 +214,9 @@ class Spec:
         self.templates = templates
         self.reflexes = reflexes
         self.digest = digest
+        self._by_stage = {
+            stage: tuple(threat for threat in self.threats.values() if threat.stage is stage) for stage in Stage
+        }
         self._validate()
 
     def with_heads(self, heads: Mapping[str, HeadSpec], threats: Mapping[str, ThreatSpec], label: str) -> Spec:
@@ -268,7 +278,7 @@ class Spec:
             raise SpecError(f"unknown panel {name!r}") from error
 
     def threats_for(self, stage: Stage) -> tuple[ThreatSpec, ...]:
-        return tuple(threat for threat in self.threats.values() if threat.stage is stage)
+        return self._by_stage[stage]
 
     def _validate(self) -> None:
         for threat in self.threats.values():

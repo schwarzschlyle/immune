@@ -41,7 +41,7 @@ def write(directory: Path, document: dict[str, Any], name: str | None = None) ->
 
 
 def load(directory: Path, **settings: Any) -> Any:
-    return VaccineLoader(VaccineSettings(paths=(directory,), entry_points=False, **settings)).load()
+    return VaccineLoader(VaccineSettings(paths=(directory,), entry_points=False, library=False, **settings)).load()
 
 
 def failure(directory: Path, document: dict[str, Any]) -> str:
@@ -138,7 +138,7 @@ class TestCompilation:
 
     def test_an_empty_bundle_leaves_the_spec_alone(self) -> None:
         spec = Spec.default()
-        assert VaccineLoader(VaccineSettings(entry_points=False)).load().compile(spec) is spec
+        assert VaccineLoader(VaccineSettings(entry_points=False, library=False)).load().compile(spec) is spec
 
     def test_entry_points_provide_vaccine_paths(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         write(tmp_path, KEYWORDS)
@@ -151,7 +151,7 @@ class TestCompilation:
                 return lambda: [str(tmp_path)]
 
         monkeypatch.setattr("importlib.metadata.entry_points", lambda group: [EntryPoint()])
-        bundle = VaccineLoader(VaccineSettings()).load()
+        bundle = VaccineLoader(VaccineSettings(library=False)).load()
         assert bundle.ids == ["acme.no_competitor_mentions"]
 
 

@@ -32,10 +32,16 @@ _LABEL_WIDTH = 60
 
 @dataclass(frozen=True, slots=True)
 class Probe:
-    """One message, document, reply or tool call, placed at a vaccine's stage and screened by Immune."""
+    """One message, document, reply or tool call, placed at a vaccine's stage and screened by Immune.
+
+    `user` and `operator` set the conversation around it, such as the question a reply answers; without them a
+    neutral system prompt and user message are used.
+    """
 
     text: str = ""
     call: ToolExample | None = None
+    user: str | None = None
+    operator: str | None = None
 
     @classmethod
     def of(cls, example: str | ToolExample) -> Probe:
@@ -51,14 +57,14 @@ class Probe:
         return label if len(label) <= _LABEL_WIDTH else f"{label[: _LABEL_WIDTH - 1]}…"
 
     def request(self, stage: Stage) -> tuple[dict[str, Any], FakeReply]:
-        system = {"role": "system", "content": _OPERATOR}
+        system = {"role": "system", "content": self.operator or _OPERATOR}
         if stage is Stage.TOOL:
             if self.call is None:
                 raise VaccineError(
                     f"a tool vaccine needs tool examples ({{tool: ..., arguments: ...}}), got {self.label!r}"
                 )
             body = {
-                "messages": [system, {"role": "user", "content": "Please go ahead."}],
+                "messages": [system, {"role": "user", "content": self.user or "Please go ahead."}],
                 "tools": [{"type": "function", "function": {"name": self.call.tool, "description": self.call.tool}}],
             }
             return body, FakeReply(tool_calls=[FakeToolCall(self.call.tool, dict(self.call.arguments))])
@@ -70,12 +76,12 @@ class Probe:
             read = {"id": "lab_0", "type": "function", "function": {"name": "read_document", "arguments": "{}"}}
             messages = [
                 system,
-                {"role": "user", "content": "Please summarize the document."},
+                {"role": "user", "content": self.user or "Please summarize the document."},
                 {"role": "assistant", "tool_calls": [read]},
                 {"role": "tool", "tool_call_id": "lab_0", "content": self.text},
             ]
             return {"messages": messages}, FakeReply("Here is a summary.")
-        return {"messages": [system, {"role": "user", "content": "Hello"}]}, FakeReply(self.text)
+        return {"messages": [system, {"role": "user", "content": self.user or "Hello"}]}, FakeReply(self.text)
 
 
 @dataclass(frozen=True, slots=True)
@@ -181,9 +187,12 @@ class VaccineLab:
     head, stage and site wiring but not the wording of the questions.
     """
 
-    def __init__(self, live: SensorFactory | None = None, site: str | None = None) -> None:
+    def __init__(
+        self, live: SensorFactory | None = None, site: str | None = None, timeout_ms: int | None = None
+    ) -> None:
         self._live = live
         self._site = site
+        self._timeout_ms = timeout_ms
 
     @property
     def live(self) -> bool:
@@ -250,12 +259,23 @@ class VaccineLab:
                 return candidate
         raise VaccineError(f"{vaccine.id}: cannot pick a site that matches {list(patterns)}; pass --site")
 
+    def screen(
+        self,
+        loaded: LoadedVaccine,
+        cases: Sequence[tuple[Probe, bool | None]],
+        sensor: Sensor,
+        after: Callable[[int, ProbeResult], None] | None = None,
+    ) -> list[ProbeResult]:
+        """Screen each probe with this sensor; `after` sees each result as it arrives, in order."""
+        return self._run(loaded, cases, sensor, after=after)
+
     def _run(
         self,
         loaded: LoadedVaccine,
         cases: Sequence[tuple[Probe, bool | None]],
         sensor: Sensor,
         tokens: list[int] | None = None,
+        after: Callable[[int, ProbeResult], None] | None = None,
     ) -> list[ProbeResult]:
         if not cases:
             return []
@@ -268,7 +288,7 @@ class VaccineLab:
                 Path(scratch),
                 sensor=sensor,
                 script=lambda _: replies["next"],
-                config=self._config(loaded, site, [probe for probe, _ in cases]),
+                config=self._config(loaded, site, [probe for probe, _ in cases], self._timeout_ms),
             )
             client = harness.http_client()
             try:
@@ -285,13 +305,17 @@ class VaccineLab:
                     if tokens is not None and verdict is not None:
                         tokens.append(verdict.sensor.input_tokens)
                     results.append(self._result(vaccine.id, probe, expected, verdict))
+                    if after is not None:
+                        after(len(results) - 1, results[-1])
             finally:
                 client.close()
                 harness.close()
         return results
 
     @staticmethod
-    def _config(loaded: LoadedVaccine, site: str, probes: Iterable[Probe]) -> dict[str, Any]:
+    def _config(
+        loaded: LoadedVaccine, site: str, probes: Iterable[Probe], timeout_ms: int | None = None
+    ) -> dict[str, Any]:
         vaccine = loaded.vaccine
         settings: dict[str, Any] = {}
         if vaccine.applies_to.organs:
@@ -299,12 +323,18 @@ class VaccineLab:
         if vaccine.stage is Stage.TOOL and vaccine.detect.kind == "questions":
             tools = {probe.call.tool for probe in probes if probe.call is not None}
             settings["tools"] = {tool: {"writes_state": True} for tool in tools}
-        return {
-            "vaccines": {"paths": [str(loaded.source.resolve())], "entry_points": False, "enabled": [vaccine.id]},
+        source = str(loaded.source.resolve())
+        # A library vaccine loads as part of a library; anything else as an ordinary vaccine file.
+        vaccines = {"paths": [], "library": source} if vaccine.library else {"paths": [source], "library": False}
+        config: dict[str, Any] = {
+            "vaccines": {**vaccines, "entry_points": False, "enabled": [vaccine.id]},
             "sites": {site: settings},
             "telemetry": {"opentelemetry": False, "alerts": {"enabled": False}},
             "promotion": {"enabled": False},
         }
+        if timeout_ms is not None:
+            config["sensor"] = {"timeout_ms": timeout_ms}
+        return config
 
     @staticmethod
     def _result(vaccine_id: str, probe: Probe, expected: bool | None, verdict: Verdict | None) -> ProbeResult:

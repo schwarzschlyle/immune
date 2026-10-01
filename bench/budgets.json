@@ -1,5 +1,5 @@
 {
-  "note": "Limits sit about 2x above a GitHub-hosted ubuntu-latest run on 30 Sep 2026 (CI numbers, not a laptop's), so a check fails on a real regression rather than on runner noise. A measurement fails when it misses its limit by more than the tolerance. Rebase after deliberate changes with `python bench/run.py --out results.json` on the same runner.",
+  "note": "Limits sit about 2x above a GitHub-hosted ubuntu-latest run on 30 Sep 2026 (CI numbers, not a laptop's), so a check fails on a real regression rather than on runner noise. A measurement fails when it misses its limit by more than the tolerance. Rebase after deliberate changes with `python bench/run.py --out results.json` on the same runner. The library budgets cap what 200 switched-off library vaccines may add: 20 ms at startup and next to nothing per call.",
   "tolerance": 0.1,
   "max": {
     "payload.1kb.overhead_ms.p50": 8.0,
@@ -10,7 +10,9 @@
     "payload.256kb.protected_ms.p95": 900.0,
     "streaming.ttft_ms.p50": 20.0,
     "streaming.ttft_overhead_ms.p50": 6.0,
-    "vaccines.50.text_ms.p50": 2.5
+    "vaccines.50.text_ms.p50": 2.5,
+    "library.200.init_overhead_ms": 20.0,
+    "library.200.off.overhead_ms.p50": 0.5
   },
   "min": {
     "concurrency.1.calls_per_s": 90.0,

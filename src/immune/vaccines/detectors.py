@@ -46,9 +46,12 @@ class Detector(ABC):
 class PatternDetector(Detector):
     def __init__(self, vaccine: Vaccine) -> None:
         super().__init__(vaccine)
-        self._matcher = TextMatcher(vaccine.detect.keywords, vaccine.detect.regex)
+        self._matcher: TextMatcher | None = None
 
     def findings(self, context: VaccineContext) -> list[Finding]:
+        # Compiled on first use, so a library vaccine that stays switched off never compiles its patterns.
+        if self._matcher is None:
+            self._matcher = TextMatcher(self.vaccine.detect.keywords, self.vaccine.detect.regex)
         text = context.text
         if context.tool is not None:
             text = f"{context.tool} {json.dumps(context.arguments, ensure_ascii=False, default=str)}"
@@ -137,6 +140,28 @@ class CallableDetector(Detector):
         return [str(item) for item in result if item]
 
 
+class DeferredCallableDetector(Detector):
+    """A Python detector imported the first time it runs, for library vaccines that are usually switched off."""
+
+    def __init__(self, vaccine: Vaccine, resolve: Callable[[], PythonDetector]) -> None:
+        super().__init__(vaccine)
+        self._resolve = resolve
+        self._detector: CallableDetector | None = None
+        self._failed = False
+
+    def findings(self, context: VaccineContext) -> list[Finding]:
+        if self._failed:
+            return []
+        if self._detector is None:
+            try:
+                self._detector = CallableDetector(self.vaccine, self._resolve())
+            except Exception as error:
+                self._failed = True
+                _LOGGER.warning("immune: vaccine %s is switched off because it cannot load: %s", self.vaccine.id, error)
+                return []
+        return self._detector.findings(context)
+
+
 class VaccineReflexes:
     def __init__(self, detectors: Sequence[Detector] = ()) -> None:
         self._text: dict[Stage, list[Detector]] = {}
@@ -151,20 +176,25 @@ class VaccineReflexes:
     def empty(self) -> bool:
         return not self._text and not self._tool
 
-    def text_findings(self, stage: Stage, text: str, site: str, organs: frozenset[str]) -> list[Finding]:
+    def text_findings(
+        self, stage: Stage, text: str, site: str, organs: frozenset[str], off: frozenset[str] = frozenset()
+    ) -> list[Finding]:
+        """Findings of the vaccines that apply here. Vaccines in `off` are switched off at this site and don't run."""
         if not text:
             return []
         return [
             finding
             for detector in self._text.get(stage, [])
-            if _applies(detector.vaccine, site, organs)
+            if detector.vaccine.id not in off and _applies(detector.vaccine, site, organs)
             for finding in detector.findings(VaccineContext(detector.vaccine.id, stage, site, text=text))
         ]
 
-    def call_findings(self, call: ToolCall, site: str, organs: frozenset[str], tainted: bool) -> list[Finding]:
+    def call_findings(
+        self, call: ToolCall, site: str, organs: frozenset[str], tainted: bool, off: frozenset[str] = frozenset()
+    ) -> list[Finding]:
         found: list[Finding] = []
         for detector in self._tool:
-            if not _applies(detector.vaccine, site, organs):
+            if detector.vaccine.id in off or not _applies(detector.vaccine, site, organs):
                 continue
             context = VaccineContext(
                 detector.vaccine.id, Stage.TOOL, site, tool=call.name, arguments=call.arguments, tainted=tainted

@@ -257,6 +257,19 @@ immune vaccines trial pinecrest.no_competitor_recommendations --corpus replies.j
 Detectors can be keywords, bounded regular expressions, questions for Jev, tool-call rules or Python functions. See
 the [vaccines guide](https://github.com/schwarzschlyle/immune/blob/main/docs/guides/vaccines.md).
 
+Immune also ships a library of measured vaccines for problems many applications share, such as dosage advice from a
+shopping assistant or investment tips from a support bot. Each one is off until you switch it on, and costs nothing
+while off:
+
+```yaml
+vaccines:
+  enabled: [immune.health.*]          # every vaccine in a domain; `immune vaccines list --library` shows them all
+```
+
+The [vaccine catalog](https://github.com/schwarzschlyle/immune/blob/main/docs/reference/vaccine-catalog.md) lists them
+with their measured numbers, and the [laboratory guide](https://github.com/schwarzschlyle/immune/blob/main/docs/contributing/vaccine-laboratory.md)
+explains how contributors build them.
+
 ## Testing
 
 `immune.testing` runs your real code through a real Immune runtime against a scripted model, offline and without

@@ -16,17 +16,19 @@ from pydantic import ValidationError
 from immune.config.settings import VaccineSettings
 from immune.config.spec import Condition, FeatureSpec, HeadSpec, InvariantSpec, QuestionSpec, Spec, ThreatSpec
 from immune.config.yaml_io import load_yaml
-from immune.errors import ConfigError, SpecError
+from immune.errors import SpecError
 from immune.types import Stage
+from immune.vaccines.catalog import LibraryCatalog
 from immune.vaccines.detectors import (
     CallableDetector,
+    DeferredCallableDetector,
     Detector,
     PatternDetector,
     PythonDetector,
     ToolRuleDetector,
     VaccineReflexes,
 )
-from immune.vaccines.model import Vaccine
+from immune.vaccines.model import LIBRARY_PREFIX, Vaccine, VaccineError, describe
 from immune.vaccines.patterns import PatternSafety, UnsafePattern
 
 _LOGGER = logging.getLogger("immune")
@@ -36,9 +38,7 @@ _PANELS = {Stage.INPUT: "input", Stage.DATA: "data", Stage.TOOL: "tool", Stage.O
 _CANDIDATES = "candidates"
 CUSTOM_INVARIANT = InvariantSpec(name="Custom", statement="Rules the operator added with vaccines.")
 
-
-class VaccineError(ConfigError):
-    pass
+__all__ = ["CUSTOM_INVARIANT", "LoadedVaccine", "VaccineBundle", "VaccineError", "VaccineLoader"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,6 +47,7 @@ class LoadedVaccine:
     source: Path
     digest: str
     detector: Detector | None
+    library: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -90,7 +91,7 @@ class VaccineBundle:
             if confirmed:
                 key = vaccine.question_key("confirmed")
                 questions.setdefault(_CANDIDATES, []).append(
-                    QuestionSpec(key=key, kind="noul", text=vaccine.confirmation)
+                    QuestionSpec(key=key, kind="noul", text=vaccine.confirmation, owner=vaccine.id)
                 )
                 heads[vaccine.id] = HeadSpec(features=(FeatureSpec(signal=key),))
                 continue
@@ -103,7 +104,14 @@ class VaccineBundle:
             for question in detect.questions:
                 key = vaccine.question_key(question.key)
                 panel.append(
-                    QuestionSpec(key=key, kind=question.kind, text=question.text, options=question.options, when=when)
+                    QuestionSpec(
+                        key=key,
+                        kind=question.kind,
+                        text=question.text,
+                        options=question.options,
+                        when=when,
+                        owner=vaccine.id,
+                    )
                 )
                 features.append(FeatureSpec(signal=key, options=question.flag, weight=weights.get(question.key, 1.0)))
             bias = detect.head.bias if detect.head is not None else 0.0
@@ -125,6 +133,16 @@ class VaccineBundle:
     def default_off(self) -> frozenset[str]:
         return frozenset(item.vaccine.id for item in self.vaccines if item.vaccine.default == "off")
 
+    def experimental(self) -> frozenset[str]:
+        """Library vaccines that are never promoted automatically; only `sites.<site>.enforce` enforces them."""
+        return frozenset(item.vaccine.id for item in self.vaccines if item.vaccine.maturity == "experimental")
+
+    def deprecated(self) -> dict[str, tuple[str, ...]]:
+        """Deprecated library vaccines and the vaccines that replace them."""
+        return {
+            item.vaccine.id: item.vaccine.related for item in self.vaccines if item.vaccine.maturity == "deprecated"
+        }
+
 
 class VaccineLoader:
     def __init__(self, settings: VaccineSettings, root: Path | None = None) -> None:
@@ -134,17 +152,35 @@ class VaccineLoader:
 
     def load(self) -> VaccineBundle:
         loaded: dict[str, LoadedVaccine] = {}
-        for path in self._files():
+        for entry in LibraryCatalog.open(self._settings.library, self._root).entries:
+            vaccine = entry.vaccine
+            detector = self._detector(vaccine, entry.source, deferred=True)
+            loaded[vaccine.id] = LoadedVaccine(vaccine, entry.source, entry.digest, detector, library=True)
+        for path in self.files():
             item = self.load_file(path)
+            self._custom(item)
             existing = loaded.get(item.vaccine.id)
             if existing is not None:
                 raise VaccineError(
                     f"vaccine id {item.vaccine.id} is defined twice: {existing.source} and {item.source}"
                 )
             loaded[item.vaccine.id] = item
-        if loaded:
-            _LOGGER.info("immune: loaded %d vaccines: %s", len(loaded), ", ".join(sorted(loaded)))
+        custom = sorted(key for key, item in loaded.items() if not item.library)
+        if custom:
+            _LOGGER.info("immune: loaded %d vaccines: %s", len(custom), ", ".join(custom))
         return VaccineBundle(tuple(loaded[key] for key in sorted(loaded)))
+
+    @staticmethod
+    def _custom(item: LoadedVaccine) -> None:
+        vaccine = item.vaccine
+        if vaccine.library:
+            name = vaccine.id.removeprefix(LIBRARY_PREFIX)
+            raise VaccineError(
+                f"{item.source}: the {LIBRARY_PREFIX} namespace is reserved for the vaccine library that ships with "
+                f"Immune; use your own, such as acme.{name.rsplit('.', 1)[-1]}"
+            )
+        if vaccine.maturity is not None or vaccine.related:
+            raise VaccineError(f"{item.source}: maturity and related only apply to library vaccines; remove them")
 
     def load_file(self, path: Path) -> LoadedVaccine:
         try:
@@ -157,7 +193,7 @@ class VaccineLoader:
         try:
             vaccine = Vaccine.model_validate(document)
         except ValidationError as error:
-            raise VaccineError(f"{path}: {self._describe(error)}") from error
+            raise VaccineError(f"{path}: {describe(error)}") from error
         return LoadedVaccine(
             vaccine=vaccine,
             source=path,
@@ -165,7 +201,7 @@ class VaccineLoader:
             detector=self._detector(vaccine, path),
         )
 
-    def _detector(self, vaccine: Vaccine, path: Path) -> Detector | None:
+    def _detector(self, vaccine: Vaccine, path: Path, deferred: bool = False) -> Detector | None:
         kind = vaccine.detect.kind
         if kind == "questions":
             return None
@@ -179,6 +215,9 @@ class VaccineLoader:
         if kind == "tool":
             return ToolRuleDetector(vaccine)
         assert vaccine.detect.python is not None
+        if deferred:
+            # Library vaccines import their function when first switched on, not at every startup.
+            return DeferredCallableDetector(vaccine, lambda: self._function(vaccine.detect.python or "", path))
         return CallableDetector(vaccine, self._function(vaccine.detect.python, path))
 
     @staticmethod
@@ -196,7 +235,8 @@ class VaccineLoader:
         detector: PythonDetector = function
         return detector
 
-    def _files(self) -> Iterator[Path]:
+    def files(self) -> Iterator[Path]:
+        """The vaccine files that `paths` and the entry points name."""
         for entry in self._paths():
             path = entry if entry.is_absolute() else self._root / entry
             if path.is_dir():
@@ -222,15 +262,6 @@ class VaccineLoader:
             for value in _as_paths(values):
                 _LOGGER.info("immune: vaccines from entry point %s: %s", entry_point.name, value)
                 yield value
-
-    @staticmethod
-    def _describe(error: ValidationError) -> str:
-        problems = []
-        for issue in error.errors():
-            location = ".".join(str(part) for part in issue["loc"]) or "file"
-            message = str(issue["msg"]).removeprefix("Value error, ")
-            problems.append(f"{location}: {message}")
-        return "; ".join(problems)
 
 
 def _as_paths(values: Any) -> Iterable[Path]:
